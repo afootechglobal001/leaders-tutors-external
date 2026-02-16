@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Run formatting and linting
+echo "🔍 Running pre-commit checks..."
+
+# Run prettier formatting
+if ! npx prettier --write .; then
+  echo "❌ Prettier formatting failed"
+  exit 1
+fi
+
+# Run lint-staged
+if ! npx lint-staged; then
+  echo "❌ Lint-staged checks failed"
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed successfully"

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Get the branch name
+branch_name=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+# Skip if detached HEAD (e.g., switching commits directly)
+if [ -z "$branch_name" ]; then
+  exit 0
+fi
+
+# Regex: allowed branch name patterns
+if ! echo "$branch_name" | grep -E -q '^(feature|bugfix|hotfix|release|chore|refactor|docs|test)/[a-z0-9._-]+$'; then
+  echo "❌ Invalid branch name: '$branch_name'"
+  echo "✅ Branch name must start with feature/, bugfix/, hotfix/, release/, chore/, refactor/, docs/, or test/"
+  echo "✅ Example: feature/user-login-page"
+  exit 1
+fi

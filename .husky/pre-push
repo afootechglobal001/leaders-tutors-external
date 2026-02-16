@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Get current branch name
+branch_name=$(git symbolic-ref --short HEAD)
+
+if ! echo "$branch_name" | grep -E -q '^(feature|bugfix|hotfix|release|chore|refactor|docs|test)/[a-z0-9._-]+$'; then
+  echo "❌ Branch name '$branch_name' is invalid!"
+  echo "✅ Use one of: feature/, bugfix/, hotfix/, release/, chore/, refactor/, docs/, test/"
+  echo "✅ Example: feature/login-page or bugfix/fix-button-crash"
+  exit 1
+fi
+
+# Run tests and build the application if branch name is OK
+# npm run test
+npm run build
