@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Tutorials from "@/features/portal/tutorials/Tutorials";
-
 export const metadata: Metadata = {
   title: "Video Tutorials - Leaders Tutors External Exams",
   description:
