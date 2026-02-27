@@ -12,7 +12,7 @@ import {
 import { CreateSkillAreaTypes } from "@/types/admin/programs/skillArea/schema";
 
 const fetchCourseraCourseList = async (
-  params: SkillAreasCourseParams
+  params: SkillAreasCourseParams,
 ): Promise<SkillAreasCourseResponse> => {
   const response = await api.get(`/admin/coursera/course/list`, { params });
   return response.data;
@@ -25,7 +25,7 @@ export const useFetchCourseraCourseList = (params: SkillAreasCourseParams) => {
 };
 
 const fetchSingleCourseraCourse = async (
-  id: string
+  id: string,
 ): Promise<SkillAreaCourseContentResponse> => {
   const response = await api.get(`/admin/coursera/course/${id}/detail`);
   return response.data;
@@ -59,7 +59,7 @@ export const useCreateSkillArea = () => {
 };
 
 const fetchAllSkillAreas = async (
-  params: FetchSkillAreaListParams
+  params: FetchSkillAreaListParams,
 ): Promise<SkillAreaListResponse> => {
   const response = await api.get(`/admin/skill-area/list`, { params });
   return response.data;

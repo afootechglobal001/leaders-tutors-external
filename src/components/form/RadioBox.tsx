@@ -1,5 +1,5 @@
-'use client';
-import React from 'react';
+"use client";
+import React from "react";
 
 interface RadioProps {
   id: string;
@@ -10,7 +10,14 @@ interface RadioProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; // Event handler
 }
 
-const Radio: React.FC<RadioProps> = ({ id, name, disabled, checked, value, onChange }) => {
+const Radio: React.FC<RadioProps> = ({
+  id,
+  name,
+  disabled,
+  checked,
+  value,
+  onChange,
+}) => {
   return (
     <label className="radio-container" htmlFor={id}>
       <input
@@ -23,7 +30,7 @@ const Radio: React.FC<RadioProps> = ({ id, name, disabled, checked, value, onCha
         onChange={onChange}
       />
       <span className="radiomark"></span>
-      {''}
+      {""}
     </label>
   );
 };

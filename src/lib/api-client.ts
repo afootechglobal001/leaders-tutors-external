@@ -25,7 +25,7 @@ export const apiClient = {
   post: async <T, B = unknown>(
     url: string,
     body?: B,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> => {
     const res = await api.post<ApiResponse<T>>(url, body, config);
     return extractData<T>(res);
@@ -34,7 +34,7 @@ export const apiClient = {
   put: async <T, B = unknown>(
     url: string,
     body?: B,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> => {
     const res = await api.put<ApiResponse<T>>(url, body, config);
     return extractData<T>(res);
@@ -43,7 +43,7 @@ export const apiClient = {
   patch: async <T, B = unknown>(
     url: string,
     body?: B,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> => {
     const res = await api.patch<ApiResponse<T>>(url, body, config);
     return extractData<T>(res);

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { XIcon } from 'lucide-react';
-import { forwardRef, useState } from 'react';
+import { XIcon } from "lucide-react";
+import { forwardRef, useState } from "react";
 
-type MessageType = 'info' | 'success' | 'warning' | 'error';
+type MessageType = "info" | "success" | "warning" | "error";
 
 interface FormMultiSelectProps {
   label?: string;
@@ -19,25 +19,38 @@ interface FormMultiSelectProps {
 
 const getMessageColor = (type: MessageType) => {
   switch (type) {
-    case 'success':
-      return 'text-green-600 border-green-500';
-    case 'warning':
-      return 'text-yellow-600 border-yellow-500';
-    case 'error':
-      return 'text-red-600 border-red-500';
-    case 'info':
-      return 'text-blue-600 border-blue-500';
+    case "success":
+      return "text-green-600 border-green-500";
+    case "warning":
+      return "text-yellow-600 border-yellow-500";
+    case "error":
+      return "text-red-600 border-red-500";
+    case "info":
+      return "text-blue-600 border-blue-500";
     default:
-      return 'text-gray-500 border-black/10';
+      return "text-gray-500 border-black/10";
   }
 };
 
 const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
-  ({ id, label, message, messageType = 'error', className, options, value, onChange, maxSelected }, ref) => {
-    const [search, setSearch] = useState('');
+  (
+    {
+      id,
+      label,
+      message,
+      messageType = "error",
+      className,
+      options,
+      value,
+      onChange,
+      maxSelected,
+    },
+    ref,
+  ) => {
+    const [search, setSearch] = useState("");
     const [isFocused, setIsFocused] = useState(false);
 
-    const borderClass = message ? getMessageColor(messageType) : '';
+    const borderClass = message ? getMessageColor(messageType) : "";
 
     const handleRemove = (val: string) => {
       onChange?.(value.filter((v) => v !== val));
@@ -45,7 +58,8 @@ const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
 
     const availableOptions = options.filter(
       (opt) =>
-        !value.includes(opt.value) && opt?.label?.toLowerCase().includes(search.toLowerCase()),
+        !value.includes(opt.value) &&
+        opt?.label?.toLowerCase().includes(search.toLowerCase()),
     );
 
     const handleSelect = (val: string) => {
@@ -54,7 +68,7 @@ const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
         (!maxSelected || value.length < maxSelected)
       ) {
         onChange?.([...value, val]);
-        setSearch('');
+        setSearch("");
         setIsFocused(false);
       }
     };
@@ -63,7 +77,7 @@ const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
       <div className="flex flex-col w-full">
         <div
           className={`relative w-full group border-2 rounded-md bg-slate-50
-          transition-all duration-200 ${borderClass} ${className ?? ''}
+          transition-all duration-200 ${borderClass} ${className ?? ""}
           focus-within:border-mtn-500`}
         >
           {label && (
@@ -107,7 +121,7 @@ const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
               placeholder={
                 maxSelected && value.length >= maxSelected
                   ? `Max ${maxSelected} reached`
-                  : 'Search...'
+                  : "Search..."
               }
               disabled={!!maxSelected && value.length >= maxSelected}
             />
@@ -120,10 +134,11 @@ const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
                 <li
                   key={opt.value}
                   onMouseDown={() => handleSelect(opt.value)}
-                  className={`px-4 py-2 cursor-pointer text-sm ${maxSelected && value.length >= maxSelected
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'hover:bg-gray-100'
-                    }`}
+                  className={`px-4 py-2 cursor-pointer text-sm ${
+                    maxSelected && value.length >= maxSelected
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "hover:bg-gray-100"
+                  }`}
                 >
                   {opt.label}
                 </li>
@@ -132,11 +147,15 @@ const FormMultiSelect = forwardRef<HTMLInputElement, FormMultiSelectProps>(
           )}
         </div>
 
-        {message && <p className={`mt-1 text-xs ${getMessageColor(messageType)}`}>{message}</p>}
+        {message && (
+          <p className={`mt-1 text-xs ${getMessageColor(messageType)}`}>
+            {message}
+          </p>
+        )}
       </div>
     );
   },
 );
 
-FormMultiSelect.displayName = 'FormMultiSelect';
+FormMultiSelect.displayName = "FormMultiSelect";
 export { FormMultiSelect };

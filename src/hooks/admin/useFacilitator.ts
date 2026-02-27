@@ -27,7 +27,7 @@ export const useCreateFacilitator = () => {
 };
 
 const fetchAllFacilitators = async (
-  params: FetchFacilitatorParams
+  params: FetchFacilitatorParams,
 ): Promise<FacilitatorListResponse> => {
   const response = await api.get(`/admin/facilitator/list`, { params });
   return response.data;

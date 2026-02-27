@@ -1,5 +1,5 @@
-'use client';
-import React from 'react';
+"use client";
+import React from "react";
 
 interface CheckboxProps {
   id?: string;
@@ -8,7 +8,7 @@ interface CheckboxProps {
   checked?: boolean;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  'aria-label'?: string;
+  "aria-label"?: string;
 }
 
 export const Checkbox: React.FC<CheckboxProps> = ({
@@ -18,7 +18,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   checked,
   value,
   onChange,
-  'aria-label': ariaLabel,
+  "aria-label": ariaLabel,
 }) => {
   return (
     <label className="container" htmlFor={id}>

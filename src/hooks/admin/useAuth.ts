@@ -26,7 +26,7 @@ export const useLogin = () => {
 export const acceptInvitation = async (data: InvitationPasswordTypes) => {
   const response = await api.post(
     "/admin/invitation/accept-and-set-password",
-    data
+    data,
   );
   return response.data;
 };

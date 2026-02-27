@@ -1,4 +1,4 @@
-export type SortDirection = 'asc' | 'desc' | null;
+export type SortDirection = "asc" | "desc" | null;
 
 interface TableColumnBase<T> {
   header: string | ((props: { column: TableColumn<T> }) => React.ReactNode);
@@ -12,7 +12,7 @@ interface TableColumnBase<T> {
   }) => React.ReactNode;
   sortable?: boolean;
   width?: string | number;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
 }
 
 export type TableColumn<T> =

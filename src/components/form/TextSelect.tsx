@@ -37,15 +37,18 @@ interface OptionWithData<T> {
   data: T;
 }
 
-interface PropsWithRender<TFieldValues extends FieldValues, TOption>
-  extends BaseProps<TFieldValues> {
+interface PropsWithRender<
+  TFieldValues extends FieldValues,
+  TOption,
+> extends BaseProps<TFieldValues> {
   renderOption: (opt: TOption, isSelected: boolean) => React.ReactNode;
   options: OptionWithData<TOption>[];
   getOptionLabel?: never;
   getOptionValue?: never;
 }
-interface PropsWithoutRender<TFieldValues extends FieldValues>
-  extends BaseProps<TFieldValues> {
+interface PropsWithoutRender<
+  TFieldValues extends FieldValues,
+> extends BaseProps<TFieldValues> {
   renderOption?: undefined;
   options: OptionWithoutData[];
   getOptionLabel?: (opt: OptionWithoutData) => string;
@@ -69,7 +72,7 @@ const getMessageColor = (type: MessageType) => {
 
 function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
   props: FormSelectProps<TFieldValues, TOption>,
-  ref: React.ForwardedRef<HTMLSelectElement>
+  ref: React.ForwardedRef<HTMLSelectElement>,
 ) {
   const {
     id,
@@ -94,14 +97,14 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
   const selectRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(selectRef as React.RefObject<HTMLElement>, () =>
-    setIsOpen(false)
+    setIsOpen(false),
   );
 
   const borderClass = message ? getMessageColor(messageType) : "";
 
   const filteredOptions = useMemo(() => {
     return options.filter((opt) =>
-      (opt.label ?? "").toLowerCase().includes(query.toLowerCase())
+      (opt.label ?? "").toLowerCase().includes(query.toLowerCase()),
     );
   }, [query, options]);
 
@@ -253,9 +256,9 @@ type FormSelectProps<TFieldValues extends FieldValues, TOption = unknown> =
 
 export const FormSelect = forwardRef(FormSelectInner) as <
   TFieldValues extends FieldValues,
-  TOption = unknown
+  TOption = unknown,
 >(
   props: FormSelectProps<TFieldValues, TOption> & {
     ref?: React.ForwardedRef<HTMLSelectElement>;
-  }
+  },
 ) => ReturnType<typeof FormSelectInner>;

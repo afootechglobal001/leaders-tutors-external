@@ -27,7 +27,7 @@ export const useCreateMentor = () => {
 };
 
 const fetchAllMentors = async (
-  params: FetchMentorsParams
+  params: FetchMentorsParams,
 ): Promise<MentorListResponse> => {
   const response = await api.get(`/admin/mentor/list`, { params });
   return response.data;

@@ -45,7 +45,7 @@ export const Modal: React.FC<ModalProps> = ({
   useClickOutside(
     modalRef as React.RefObject<HTMLElement>,
     onClose ?? (() => {}),
-    closeOnOutsideClick
+    closeOnOutsideClick,
   );
 
   useScrollLock({ isOpen });
@@ -76,6 +76,6 @@ export const Modal: React.FC<ModalProps> = ({
         {children}
       </div>
     </div>,
-    getPortalContainer()
+    getPortalContainer(),
   );
 };

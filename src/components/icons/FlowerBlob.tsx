@@ -17,8 +17,7 @@ export default function FlowerBlob({
   const petalSize = 40; // radius of each petal circle
   const angleStep = (2 * Math.PI) / petals;
 
-  const round = (num: number, decimals = 4) =>
-    Number(num.toFixed(decimals));
+  const round = (num: number, decimals = 4) => Number(num.toFixed(decimals));
 
   return (
     <svg
@@ -34,13 +33,7 @@ export default function FlowerBlob({
           const x = round(radius * Math.cos(angle));
           const y = round(radius * Math.sin(angle));
           return (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r={petalSize}
-              fill="currentColor"
-            />
+            <circle key={i} cx={x} cy={y} r={petalSize} fill="currentColor" />
           );
         })}
       </g>

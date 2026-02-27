@@ -63,7 +63,7 @@ const getMessageColor = (type: MessageType) => {
 
 function FormSelectInner<TFieldValues extends FieldValues>(
   props: FormSelectProps<TFieldValues>,
-  ref: React.ForwardedRef<HTMLSelectElement>
+  ref: React.ForwardedRef<HTMLSelectElement>,
 ) {
   const {
     id,
@@ -93,14 +93,14 @@ function FormSelectInner<TFieldValues extends FieldValues>(
   const selectRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(selectRef as React.RefObject<HTMLElement>, () =>
-    setIsOpen(false)
+    setIsOpen(false),
   );
 
   const borderClass = message ? getMessageColor(messageType) : "";
 
   const filteredOptions = useMemo(() => {
     return options.filter((opt) =>
-      (opt.label ?? "").toLowerCase().includes(query.toLowerCase())
+      (opt.label ?? "").toLowerCase().includes(query.toLowerCase()),
     );
   }, [query, options]);
 
@@ -255,7 +255,7 @@ function FormSelectInner<TFieldValues extends FieldValues>(
                     </ul>
                   )}
                 </div>,
-                menuPortalTarget ?? document.body
+                menuPortalTarget ?? document.body,
               )}
 
             {(error?.message || message) && (
@@ -299,9 +299,9 @@ type FormSelectProps<TFieldValues extends FieldValues> =
   };
 
 export const CustomCourseraListSelect = forwardRef(FormSelectInner) as <
-  TFieldValues extends FieldValues
+  TFieldValues extends FieldValues,
 >(
   props: FormSelectProps<TFieldValues> & {
     ref?: React.ForwardedRef<HTMLSelectElement>;
-  }
+  },
 ) => ReturnType<typeof FormSelectInner>;

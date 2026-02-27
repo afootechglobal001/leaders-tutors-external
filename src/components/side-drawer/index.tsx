@@ -32,7 +32,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   useClickOutside(
     sideDrawerRef as React.RefObject<HTMLElement>,
     onClose,
-    closeOnOutsideClick
+    closeOnOutsideClick,
   );
   useScrollLock({ isOpen });
 
@@ -92,6 +92,6 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };

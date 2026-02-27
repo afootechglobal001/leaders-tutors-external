@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { forwardRef } from 'react';
+import { forwardRef } from "react";
 
-type MessageType = 'info' | 'success' | 'warning' | 'error';
+type MessageType = "info" | "success" | "warning" | "error";
 
 interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -14,16 +14,16 @@ interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> 
 
 const getMessageColor = (type: MessageType) => {
   switch (type) {
-    case 'success':
-      return 'text-green-600 border-green-500';
-    case 'warning':
-      return 'text-yellow-600 border-yellow-500';
-    case 'error':
-      return 'text-red-600 border-red-500';
-    case 'info':
-      return 'text-blue-600 border-blue-500';
+    case "success":
+      return "text-green-600 border-green-500";
+    case "warning":
+      return "text-yellow-600 border-yellow-500";
+    case "error":
+      return "text-red-600 border-red-500";
+    case "info":
+      return "text-blue-600 border-blue-500";
     default:
-      return 'text-gray-500 border-black/10';
+      return "text-gray-500 border-black/10";
   }
 };
 
@@ -34,15 +34,15 @@ const CustomTextSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
       label,
       isOperator = false,
       message,
-      messageType = 'error',
+      messageType = "error",
       className,
       options,
-      defaultValue = '',
+      defaultValue = "",
       ...rest
     },
     ref,
   ) => {
-    const borderClass = message ? getMessageColor(messageType) : '';
+    const borderClass = message ? getMessageColor(messageType) : "";
 
     return (
       <>
@@ -50,8 +50,8 @@ const CustomTextSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
           className={`relative z-0 w-full group 
             rounded-md bg-slate-50 
             transition-all duration-200  ${
-              !isOperator ? ' border-2 border-gray-200' : ''
-            } ${borderClass} ${className ?? ''}
+              !isOperator ? " border-2 border-gray-200" : ""
+            } ${borderClass} ${className ?? ""}
                focus-within:border-mtn-500
                 focus-within:ring-0
                 focus-within:bg-white
@@ -80,15 +80,17 @@ const CustomTextSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
               htmlFor={id}
               className={`absolute top-[-10px] bg-white left-3 text-subtitle duration-100 transform text-xs px-2 ${
                 !label &&
-                'peer-placeholder-shown:top-5 peer-focus:top-[-10px] peer-focus:text-subtitle peer-focus:px-2 peer-focus:text-mtn-500'
-              } ${message ? borderClass : ''}`}
+                "peer-placeholder-shown:top-5 peer-focus:top-[-10px] peer-focus:text-subtitle peer-focus:px-2 peer-focus:text-mtn-500"
+              } ${message ? borderClass : ""}`}
             >
               {label}
             </label>
           )}
         </div>
         {message && (
-          <p className={`relative top-[-10px] text-xs ${getMessageColor(messageType)}`}>
+          <p
+            className={`relative top-[-10px] text-xs ${getMessageColor(messageType)}`}
+          >
             {message}
           </p>
         )}
@@ -97,6 +99,6 @@ const CustomTextSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
   },
 );
 
-CustomTextSelect.displayName = 'FormSelect';
+CustomTextSelect.displayName = "FormSelect";
 
 export { CustomTextSelect };

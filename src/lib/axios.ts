@@ -119,7 +119,7 @@ export const handleAppError = ({
 const setupInterceptors = (instance: AxiosInstance) => {
   instance.interceptors.request.use(
     async (
-      config: InternalAxiosRequestConfig
+      config: InternalAxiosRequestConfig,
     ): Promise<InternalAxiosRequestConfig> => {
       const token = await getCachedToken();
 
@@ -130,7 +130,7 @@ const setupInterceptors = (instance: AxiosInstance) => {
 
       return config;
     },
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 
   instance.interceptors.response.use(
@@ -143,7 +143,7 @@ const setupInterceptors = (instance: AxiosInstance) => {
         message,
         originalError: error,
       });
-    }
+    },
   );
 };
 

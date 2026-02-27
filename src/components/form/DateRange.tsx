@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { format } from 'date-fns';
-import { forwardRef, useState, useRef, useEffect } from 'react';
-import { DayPicker, type DateRange } from 'react-day-picker';
-import { getMessageColor, MessageType } from './TextInput';
-import 'react-day-picker/dist/style.css';
+import { format } from "date-fns";
+import { forwardRef, useState, useRef, useEffect } from "react";
+import { DayPicker, type DateRange } from "react-day-picker";
+import { getMessageColor, MessageType } from "./TextInput";
+import "react-day-picker/dist/style.css";
 
 interface DateRangeInputProps {
   id: string;
@@ -17,8 +17,13 @@ interface DateRangeInputProps {
 }
 
 const DateRangeInput = forwardRef<HTMLFieldSetElement, DateRangeInputProps>(
-  ({ id, label, message, messageType = 'error', className, value, onChange }, ref) => {
-    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(value);
+  (
+    { id, label, message, messageType = "error", className, value, onChange },
+    ref,
+  ) => {
+    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(
+      value,
+    );
     const [showCalendar, setShowCalendar] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -44,20 +49,24 @@ const DateRangeInput = forwardRef<HTMLFieldSetElement, DateRangeInputProps>(
 
     const formatted =
       selectedRange?.from && selectedRange?.to
-        ? `${format(selectedRange.from, 'dd MMM yyyy')} → ${format(selectedRange.to, 'dd MMM yyyy')}`
-        : '';
+        ? `${format(selectedRange.from, "dd MMM yyyy")} → ${format(selectedRange.to, "dd MMM yyyy")}`
+        : "";
 
-    const borderClass = message ? getMessageColor(messageType) : '';
+    const borderClass = message ? getMessageColor(messageType) : "";
 
     // Close calendar on outside click
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        if (
+          wrapperRef.current &&
+          !wrapperRef.current.contains(event.target as Node)
+        ) {
           setShowCalendar(false);
         }
       };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     return (
@@ -66,7 +75,7 @@ const DateRangeInput = forwardRef<HTMLFieldSetElement, DateRangeInputProps>(
         <div
           className={`relative z-0 w-full rounded-md bg-slate-50 transition-all duration-200 
             border-2 border-gray-200 focus-within:bg-white focus-within:border-2 focus-within:ring-0
-            ${borderClass} ${className ?? ''} ${message ? 'border-red-500' : 'focus-within:border-mtn-500'}
+            ${borderClass} ${className ?? ""} ${message ? "border-red-500" : "focus-within:border-mtn-500"}
           `}
         >
           <input
@@ -85,7 +94,7 @@ const DateRangeInput = forwardRef<HTMLFieldSetElement, DateRangeInputProps>(
               htmlFor={id}
               className={`absolute top-[-10px] bg-white left-3 text-subtitle duration-100 transform text-xs px-2
                 peer-placeholder-shown:top-5 peer-focus:top-[-10px] peer-focus:text-subtitle peer-focus:px-2
-                ${!message ? 'peer-focus:text-mtn-500' : ''} ${message ? borderClass : ''}`}
+                ${!message ? "peer-focus:text-mtn-500" : ""} ${message ? borderClass : ""}`}
             >
               {label}
             </label>
@@ -101,10 +110,12 @@ const DateRangeInput = forwardRef<HTMLFieldSetElement, DateRangeInputProps>(
               mode="range"
               selected={selectedRange}
               onSelect={handleSelect}
-              numberOfMonths={typeof window !== 'undefined' && window.innerWidth < 640 ? 1 : 2}
+              numberOfMonths={
+                typeof window !== "undefined" && window.innerWidth < 640 ? 1 : 2
+              }
               className="w-full"
               classNames={{
-                months: 'flex flex-row gap-4', // This is key!
+                months: "flex flex-row gap-4", // This is key!
               }}
             />
             {(selectedRange?.from || selectedRange?.to) && (
@@ -133,5 +144,5 @@ const DateRangeInput = forwardRef<HTMLFieldSetElement, DateRangeInputProps>(
   },
 );
 
-DateRangeInput.displayName = 'DateRangeInput';
+DateRangeInput.displayName = "DateRangeInput";
 export { DateRangeInput };

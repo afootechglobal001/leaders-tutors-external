@@ -91,7 +91,7 @@ const useDialogState = () => {
         position: { top, left },
       });
     },
-    []
+    [],
   );
 
   const close = useCallback(() => {
@@ -176,7 +176,7 @@ const ConfirmDialog = ({
         </div>
       </div>
     </>,
-    document.body
+    document.body,
   );
 };
 
@@ -202,14 +202,6 @@ const DialogContainer = () => {
 };
 
 const DialogPortal = () => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
   return createPortal(<DialogContainer />, document.body);
 };
 

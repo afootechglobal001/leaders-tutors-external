@@ -95,6 +95,6 @@ export function showToast({
       icon={ICONS[variant]}
       iconBgColor={ICON_BG_COLORS[variant]}
     />,
-    { icon: false, ...options }
+    { icon: false, ...options },
   );
 }

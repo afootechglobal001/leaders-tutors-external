@@ -6,7 +6,11 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
   // Generate the first three and last three page numbers
   const firstPages = [1, 2, 3].filter((page) => page <= totalPages);
   const lastPages = [totalPages - 2, totalPages - 1, totalPages].filter(
@@ -45,8 +49,8 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
           key={page}
           className={`px-4 py-2 rounded ${
             page === currentPage
-              ? 'bg-[#FFFAE6] text-gray-700'
-              : 'bg-none text-subtitle hover:bg-gray-300'
+              ? "bg-[#FFFAE6] text-gray-700"
+              : "bg-none text-subtitle hover:bg-gray-300"
           }`}
           onClick={() => onPageChange(page)}
         >
@@ -68,7 +72,9 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
       )}
 
       {/* Separator if necessary */}
-      {currentPage < totalPages - 3 && <span className="px-2 text-subtitle">...</span>}
+      {currentPage < totalPages - 3 && (
+        <span className="px-2 text-subtitle">...</span>
+      )}
 
       {/* Last 3 Pages */}
       {lastPages.map((page) => (
@@ -76,8 +82,8 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
           key={page}
           className={`px-4 py-2 rounded ${
             page === currentPage
-              ? 'bg-[#FFFAE6] text-gray-700'
-              : 'bg-none text-subtitle hover:bg-gray-300'
+              ? "bg-[#FFFAE6] text-gray-700"
+              : "bg-none text-subtitle hover:bg-gray-300"
           }`}
           onClick={() => onPageChange(page)}
         >

@@ -29,4 +29,3 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
     </svg>
   );
 };
-
