@@ -67,7 +67,13 @@
         },
         "paymentMethod": {
           "type": "string",
-          "enum": ["Credit Card", "Bank Transfer", "Cash", "Check", "Online Payment"],
+          "enum": [
+            "Credit Card",
+            "Bank Transfer",
+            "Cash",
+            "Check",
+            "Online Payment"
+          ],
           "description": "Method of payment"
         },
         "invoiceNumber": {

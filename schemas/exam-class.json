@@ -43,22 +43,12 @@
     },
     "level": {
       "type": "string",
-      "enum": [
-        "Foundation",
-        "Intermediate",
-        "Advanced",
-        "Excellence"
-      ],
+      "enum": ["Foundation", "Intermediate", "Advanced", "Excellence"],
       "description": "Class difficulty level"
     },
     "classType": {
       "type": "string",
-      "enum": [
-        "Regular",
-        "Intensive",
-        "Crash Course",
-        "One-on-One"
-      ],
+      "enum": ["Regular", "Intensive", "Crash Course", "One-on-One"],
       "description": "Type of class delivery"
     },
     "schedule": {
@@ -158,12 +148,7 @@
         },
         "frequency": {
           "type": "string",
-          "enum": [
-            "per session",
-            "per month",
-            "per term",
-            "per course"
-          ],
+          "enum": ["per session", "per month", "per term", "per course"],
           "description": "Frequency of payment"
         }
       },
@@ -221,13 +206,7 @@
     },
     "status": {
       "type": "string",
-      "enum": [
-        "Open",
-        "Full",
-        "In Progress",
-        "Completed",
-        "Cancelled"
-      ],
+      "enum": ["Open", "Full", "In Progress", "Completed", "Cancelled"],
       "description": "Current status of the class"
     }
   },

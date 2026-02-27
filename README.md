@@ -30,6 +30,7 @@ leaders-tutors-external/
 ### 1. Understanding Exam Classes
 
 Each external exam class is defined by:
+
 - **Exam Type**: The type of examination (IGCSE, A-Level, SAT, etc.)
 - **Subject**: The specific subject being taught
 - **Schedule**: When and how often the class meets
@@ -48,20 +49,24 @@ Track student enrollments and maintain waitlists when classes reach capacity.
 ## Supported Exam Types
 
 ### International Qualifications
+
 - **IGCSE**: Cambridge and Edexcel boards
 - **A-Level**: Cambridge and Edexcel boards
 - **IB**: International Baccalaureate programs
 
 ### Standardized Tests
+
 - **SAT**: Scholastic Assessment Test
 - **ACT**: American College Testing
 - **AP**: Advanced Placement
 
 ### Language Proficiency
+
 - **IELTS**: International English Language Testing System
 - **TOEFL**: Test of English as a Foreign Language
 
 ### Graduate Admissions
+
 - **GRE**: Graduate Record Examination
 - **GMAT**: Graduate Management Admission Test
 
@@ -91,6 +96,7 @@ Track student enrollments and maintain waitlists when classes reach capacity.
 ## Support
 
 For questions or support:
+
 - Email: support@leaderstutors.com
 - Documentation: See `/docs` directory
 - Issues: Report via repository issues

@@ -19,10 +19,7 @@
         "Art & Design",
         "Music"
       ],
-      "examSessions": [
-        "May/June",
-        "October/November"
-      ]
+      "examSessions": ["May/June", "October/November"]
     },
     {
       "id": "A-Level",
@@ -42,19 +39,13 @@
         "History",
         "Geography"
       ],
-      "examSessions": [
-        "May/June",
-        "October/November"
-      ]
+      "examSessions": ["May/June", "October/November"]
     },
     {
       "id": "IB",
       "name": "International Baccalaureate",
       "boards": ["IB Organization"],
-      "programs": [
-        "Diploma Programme",
-        "Middle Years Programme"
-      ],
+      "programs": ["Diploma Programme", "Middle Years Programme"],
       "subjects": [
         "Mathematics (Analysis and Approaches)",
         "Mathematics (Applications and Interpretation)",
@@ -68,10 +59,7 @@
         "History",
         "Geography"
       ],
-      "examSessions": [
-        "May",
-        "November"
-      ]
+      "examSessions": ["May", "November"]
     },
     {
       "id": "SAT",
@@ -83,9 +71,7 @@
         "Mathematics (No Calculator)",
         "Mathematics (Calculator)"
       ],
-      "examSessions": [
-        "Monthly (August through June)"
-      ]
+      "examSessions": ["Monthly (August through June)"]
     },
     {
       "id": "ACT",
@@ -98,9 +84,7 @@
         "Science",
         "Writing (Optional)"
       ],
-      "examSessions": [
-        "Multiple dates throughout the year"
-      ]
+      "examSessions": ["Multiple dates throughout the year"]
     },
     {
       "id": "AP",
@@ -123,41 +107,22 @@
         "AP Psychology",
         "AP Economics (Macro & Micro)"
       ],
-      "examSessions": [
-        "May"
-      ]
+      "examSessions": ["May"]
     },
     {
       "id": "IELTS",
       "name": "International English Language Testing System",
       "boards": ["British Council", "IDP", "Cambridge Assessment"],
-      "modules": [
-        "Listening",
-        "Reading",
-        "Writing",
-        "Speaking"
-      ],
-      "types": [
-        "Academic",
-        "General Training"
-      ],
-      "examSessions": [
-        "Multiple dates throughout the year"
-      ]
+      "modules": ["Listening", "Reading", "Writing", "Speaking"],
+      "types": ["Academic", "General Training"],
+      "examSessions": ["Multiple dates throughout the year"]
     },
     {
       "id": "TOEFL",
       "name": "Test of English as a Foreign Language",
       "boards": ["ETS"],
-      "sections": [
-        "Reading",
-        "Listening",
-        "Speaking",
-        "Writing"
-      ],
-      "examSessions": [
-        "Multiple dates throughout the year"
-      ]
+      "sections": ["Reading", "Listening", "Speaking", "Writing"],
+      "examSessions": ["Multiple dates throughout the year"]
     },
     {
       "id": "GRE",
@@ -168,9 +133,7 @@
         "Quantitative Reasoning",
         "Analytical Writing"
       ],
-      "examSessions": [
-        "Year-round (computer-based)"
-      ]
+      "examSessions": ["Year-round (computer-based)"]
     },
     {
       "id": "GMAT",
@@ -182,28 +145,10 @@
         "Quantitative",
         "Verbal"
       ],
-      "examSessions": [
-        "Year-round (computer-based)"
-      ]
+      "examSessions": ["Year-round (computer-based)"]
     }
   ],
-  "classLevels": [
-    "Foundation",
-    "Intermediate",
-    "Advanced",
-    "Excellence"
-  ],
-  "classTypes": [
-    "Regular",
-    "Intensive",
-    "Crash Course",
-    "One-on-One"
-  ],
-  "classStatuses": [
-    "Open",
-    "Full",
-    "In Progress",
-    "Completed",
-    "Cancelled"
-  ]
+  "classLevels": ["Foundation", "Intermediate", "Advanced", "Excellence"],
+  "classTypes": ["Regular", "Intensive", "Crash Course", "One-on-One"],
+  "classStatuses": ["Open", "Full", "In Progress", "Completed", "Cancelled"]
 }

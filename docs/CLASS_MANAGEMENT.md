@@ -43,6 +43,7 @@ To add a new external exam class, create a JSON object following the schema defi
 ## Updating Class Information
 
 Classes should be updated regularly to reflect:
+
 - Current enrollment numbers
 - Status changes (Open → Full → In Progress → Completed)
 - Schedule modifications

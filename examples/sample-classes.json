@@ -70,10 +70,7 @@
     "tutor": {
       "tutorId": "TUT-002",
       "name": "Prof. Michael Chen",
-      "qualifications": [
-        "Master's in Physics",
-        "A-Level Physics Examiner"
-      ],
+      "qualifications": ["Master's in Physics", "A-Level Physics Examiner"],
       "experience": 12
     },
     "capacity": {
@@ -124,10 +121,7 @@
     "tutor": {
       "tutorId": "TUT-003",
       "name": "Ms. Emily Rodriguez",
-      "qualifications": [
-        "SAT Perfect Score (1600)",
-        "Master's in Education"
-      ],
+      "qualifications": ["SAT Perfect Score (1600)", "Master's in Education"],
       "experience": 8
     },
     "capacity": {
