@@ -5,7 +5,7 @@ import {
   AuthLoginType,
   InvitationPasswordTypes,
   rejectInvitationTypes,
-} from "@/types/admin/auth/schema";
+} from "@/types/auth/schema";
 
 export const login = async (data: AuthLoginType) => {
   const response = await api.post("/auth/login", data);
