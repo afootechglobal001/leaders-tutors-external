@@ -202,6 +202,8 @@ const DialogContainer = () => {
 };
 
 const DialogPortal = () => {
+  if (typeof window === "undefined") return null;
+
   return createPortal(<DialogContainer />, document.body);
 };
 
