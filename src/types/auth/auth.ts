@@ -1,0 +1,18 @@
+export type AuthFormStepsType =
+  | "login"
+  | "resetPassword"
+  | "verifyAccount"
+  | "createPassword";
+
+export interface AuthResponse {
+  token: string;
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  last_active: string; // ISO date string
+  role: "Administrator" | "User" | "Manager" | string; // extend roles as needed
+  status: "Active" | "Inactive" | "Suspended" | string;
+  middle_name: string | null;
+}
