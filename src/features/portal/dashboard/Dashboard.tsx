@@ -51,6 +51,15 @@ const tutorialSubjects: TutorialSubject[] = [
       { name: "THIRD TERM", count: 10 },
     ],
   },
+    {
+    id: "mathematics",
+    name: "Mathematics",
+    terms: [
+      { name: "FIRST TERM", count: 10 },
+      { name: "SECOND TERM", count: 10 },
+      { name: "THIRD TERM", count: 10 },
+    ],
+  },
 ];
 
 export default function Dashboard() {
@@ -168,7 +177,7 @@ export default function Dashboard() {
                         >
                           <span>{term.name}</span>
                           <span className="px-1.5 py-0.5 bg-white text-gray-800 text-[10px] font-semibold rounded">
-                            {term.count} SS
+                            {term.count} 
                           </span>
                         </button>
                       ))}
