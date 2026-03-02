@@ -4,6 +4,7 @@ import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
 import { useState } from "react";
 import { Button } from "@/components/form";
+import Link from "next/link";
 
 interface TutorialSubject {
   id: string;
@@ -193,14 +194,13 @@ export default function Dashboard() {
             <div className="text-xs text-gray-600">
               {displayStart} of {tutorialSubjects.length}
             </div>
+            <Link href="/tutorials">
             <Button
               text="View More"
               size="sm"
               className="px-4 text-xs"
-              onClick={() => {
-                window.location.href = "/tutorials";
-              }}
             />
+            </Link>
           </div>
         </div>
       </section>
