@@ -3,4 +3,5 @@ export const AUTH_PAGES = {
   RESET_PASSWORD: "resetPassword",
   VERIFY_ACCOUNT: "verifyAccount",
   CREATE_PASSWORD: "createPassword",
+  SIGN_UP: "signup",
 } as const;

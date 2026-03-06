@@ -305,3 +305,28 @@
   border-radius: 50%;
   background: white;
 }
+
+/* Signup form helper rules added to globals to ensure consistent input sizing and hide scrollbars visually */
+.signup-form input,
+.signup-form select,
+.signup-form textarea {
+  font-size: 15px; /* match body text */
+  font-weight: 400;
+  font-family:
+    "font_regular",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial;
+}
+
+/* visually hide scrollbars while keeping content scrollable */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
