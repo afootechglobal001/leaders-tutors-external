@@ -52,6 +52,10 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
     gotoAuthFormPage("resetPassword");
   };
 
+  const signUp = async () => {
+    gotoAuthFormPage("signup");
+  };
+
   return (
     <>
       <section className="flex flex-col gap-5 justify-center items-start animate-fade-up">
@@ -115,7 +119,7 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
             Don&apos;t have an account?{" "}
             <span
               className="text-(--primary-color) font-medium-custom cursor-pointer hover:underline"
-              onClick={resetPassword}
+              onClick={signUp}
             >
               Sign Up Here
             </span>

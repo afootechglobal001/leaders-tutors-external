@@ -2,7 +2,8 @@ export type AuthFormStepsType =
   | "login"
   | "resetPassword"
   | "verifyAccount"
-  | "createPassword";
+  | "createPassword"
+  | "signup";
 
 export interface AuthResponse {
   token: string;

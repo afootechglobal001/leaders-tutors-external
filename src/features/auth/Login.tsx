@@ -10,6 +10,7 @@ import { CreatePassword } from "./CreatePassword";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/general-components/compnents";
+import Signup from "./Signup";
 
 export default function Login() {
   const { user } = useAuthStore();
@@ -35,6 +36,8 @@ export default function Login() {
     return <LoadingScreen />;
   }
 
+  console.log(nextPage);
+
   return (
     <UserAuthWrapper>
       {nextPage === AUTH_PAGES.LOGIN && (
@@ -48,6 +51,10 @@ export default function Login() {
       )}
       {nextPage === AUTH_PAGES.CREATE_PASSWORD && (
         <CreatePassword gotoAuthFormPage={gotoAuthFormPage} />
+      )}
+
+      {nextPage === AUTH_PAGES.SIGN_UP && (
+        <Signup gotoAuthFormPage={gotoAuthFormPage} />
       )}
     </UserAuthWrapper>
   );
