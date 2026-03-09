@@ -9,7 +9,7 @@ type MessageType = "info" | "success" | "warning" | "error";
 
 type BaseProps<TFieldValues extends FieldValues> = Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
-  "name"
+  "name" | "size"
 > & {
   id?: string;
   label?: string;
@@ -24,6 +24,8 @@ type BaseProps<TFieldValues extends FieldValues> = Omit<
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  size?: "sm" | "md";
+  clearable?: boolean;
 };
 
 interface OptionWithoutData {
@@ -89,6 +91,8 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
     className,
     placeholder,
     disabled = false,
+    size = "md",
+    clearable = true,
     ...rest
   } = props;
   const [query, setQuery] = useState("");
@@ -123,9 +127,7 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
           <div
             className={`relative rounded-md bg-slate-50 transition-all duration-200 ${
               !isOperator ? "border-2 border-gray-200" : ""
-            } ${error ? getMessageColor("error") : borderClass} ${
-              className ?? "w-full"
-            }
+            } ${error ? getMessageColor("error") : borderClass} ${className ?? "w-full"}
                 focus-within:border-mtn-500 focus-within:ring-0 focus-within:bg-white focus-within:border-2`}
           >
             <label
@@ -137,7 +139,7 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
 
             <button
               type="button"
-              className={`w-full text-left p-4 py-5 text-sm text-black bg-white rounded-lg border-0 focus:outline-none peer flex justify-between items-center ${
+              className={`w-full text-left ${size === "sm" ? "p-3 py-3 text-sm" : "p-4 py-5 text-sm"} text-black bg-white rounded-lg border-0 focus:outline-none peer flex justify-between items-center ${
                 disabled ? "opacity-50 cursor-not-allowed" : ""
               }`}
               onClick={!disabled ? () => setIsOpen((prev) => !prev) : undefined}
@@ -147,7 +149,7 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
                   placeholder}
               </span>
               <div className="flex items-center gap-2">
-                {value && (
+                {clearable && value && (
                   <div
                     role="button"
                     tabIndex={0}
@@ -156,7 +158,7 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
                       onChange("");
                       setQuery("");
                     }}
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-mtn-500 focus:ring-offset-2"
+                    className={`${size === "sm" ? "p-1" : "p-1"} hover:bg-gray-100 rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-mtn-500 focus:ring-offset-2`}
                     title="Clear selection"
                     aria-label="Clear selection"
                   >
@@ -173,12 +175,14 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
             </button>
 
             {isOpen && (
-              <div className="relative z-50 top-full left-0 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
+              <div
+                className={`absolute z-50 top-full left-0 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto`}
+              >
                 <input
                   ref={searchInputRef}
                   type="text"
                   placeholder={searchPlaceholder}
-                  className="w-full p-2 border-b border-gray-200 text-sm outline-none"
+                  className={`w-full ${size === "sm" ? "p-2 text-xs" : "p-2 text-sm"} border-b border-gray-200 outline-none`}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   disabled={isLoading || disabled}
@@ -193,7 +197,7 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
                     filteredOptions.map((opt) => (
                       <li
                         key={opt.value}
-                        className={`p-2 hover:bg-mtn-100 text-sm cursor-pointer ${
+                        className={`p-2 hover:bg-mtn-100 ${size === "sm" ? "text-xs" : "text-sm"} px-3 cursor-pointer ${
                           value === opt.value ? "bg-mtn-50 font-medium" : ""
                         }`}
                         onClick={() => {
@@ -220,15 +224,12 @@ function FormSelectInner<TFieldValues extends FieldValues, TOption = unknown>(
 
           {(error?.message || message) && (
             <p
-              className={`mt-1 text-xs ${
-                error ? getMessageColor("error") : getMessageColor(messageType)
-              }`}
+              className={`mt-1 text-xs ${error ? getMessageColor("error") : getMessageColor(messageType)}`}
             >
               {error?.message || message}
             </p>
           )}
 
-          {/* Hidden select for form compatibility */}
           <select
             id={id}
             ref={ref}
