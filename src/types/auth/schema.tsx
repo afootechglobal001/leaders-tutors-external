@@ -4,22 +4,24 @@ export const AuthLoginSchema = z.object({
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters long" }),
-  user_type: z.enum(["ADMIN", "USER"]),
 });
 export type AuthLoginType = z.infer<typeof AuthLoginSchema>;
 
-export const InvitationPasswordSchema = z.object({
-  token: z.string().min(1, { message: "Token is required" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters long" }),
-  confirm_password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters long" }),
-});
-export type InvitationPasswordTypes = z.infer<typeof InvitationPasswordSchema>;
+export const SignupSchema = z
+  .object({
+    fullName: z.string().min(1, "Institution name is required"),
 
-export const rejectInvitationSchema = z.object({
-  token: z.string().min(1, { message: "Token is required" }),
-});
-export type rejectInvitationTypes = z.infer<typeof rejectInvitationSchema>;
+    emailAddress: z.string().email().min(1, "Contact email is required"),
+    phoneNumber: z.string().min(1, "Contact phone is required"),
+    department: z.string().min(1, "Department is required"),
+    exam: z.string().min(1, "Exam is required"),
+    password: z.string().min(6, "Password must be at least 6 characters long"),
+    confirmPassword: z
+      .string()
+      .min(6, "Confirm Password must be at least 6 characters long"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+  });
+
+export type SignupSchemaType = z.infer<typeof SignupSchema>;
