@@ -1,7 +1,5 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { ReactNode, useState } from "react";
 import { Header } from "./Header";
-import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/general-components/compnents";
 import { SideBar } from "@/features/portal/SideBar";
 
@@ -10,45 +8,7 @@ type AuthWrapperProps = {
 };
 
 export const PortalWrapper = ({ children }: AuthWrapperProps) => {
-  const { user, clearAuth } = useAuthStore();
-  const router = useRouter();
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-
-  const IDLE_TIMEOUT =
-    Number(process.env.NEXT_PUBLIC_IDLE_TIMEOUT) || 5 * 60 * 1000;
-
-  useEffect(() => {
-    setHydrated(true); // Zustand has hydrated after first render
-  }, []);
-
-  // useEffect(() => {
-  //   if (!hydrated) return;
-
-  //   if (!user) {
-  //     clearAuth();
-  //     setHydrated(false);
-  //     router.push("/admin"); // go back to login page
-  //     return;
-  //   }
-
-  //   const resetTimer = () => {
-  //     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-  //     idleTimerRef.current = setTimeout(() => {
-  //       clearAuth();
-  //       router.push("/admin");
-  //     }, IDLE_TIMEOUT);
-  //   };
-
-  //   const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
-  //   events.forEach((event) => window.addEventListener(event, resetTimer));
-  //   resetTimer();
-
-  //   return () => {
-  //     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-  //     events.forEach((event) => window.removeEventListener(event, resetTimer));
-  //   };
-  // }, [hydrated, user, IDLE_TIMEOUT, clearAuth, router]);
+  const [hydrated] = useState(true);
 
   if (!hydrated) {
     return <LoadingScreen message="Restoring session..." />;

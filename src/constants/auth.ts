@@ -3,5 +3,10 @@ export const AUTH_PAGES = {
   RESET_PASSWORD: "resetPassword",
   VERIFY_ACCOUNT: "verifyAccount",
   CREATE_PASSWORD: "createPassword",
-  SIGN_UP: "signup",
 } as const;
+
+export const DEPARTMENTS = [
+  { value: "SCIENCE", label: "SCIENCE" },
+  { value: "COMMERCIAL", label: "COMMERCIAL" },
+  { value: "ART", label: "ART" },
+];

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AUTH_PAGES } from "@/constants/auth";
 import { UserAuthWrapper } from "@/features/auth/UserAuthWrapper";
 import { Auth } from "./Auth";
@@ -7,36 +7,19 @@ import { AuthFormStepsType } from "@/types/auth/auth";
 import { ResetPassword } from "./ResetPassword";
 import { VerifyAccount } from "./VerifyAccount";
 import { CreatePassword } from "./CreatePassword";
-import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/general-components/compnents";
-import Signup from "./Signup";
 
 export default function Login() {
-  const { user } = useAuthStore();
-  const router = useRouter();
-  const [nextPage, setNextPage] = useState<AuthFormStepsType>();
-  const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const [nextPage, setNextPage] = useState<AuthFormStepsType>(AUTH_PAGES.LOGIN);
+  const [isLoggedOut] = useState(true);
 
   const gotoAuthFormPage = (stepKey: AuthFormStepsType) => {
     setNextPage(stepKey);
   };
 
-  useEffect(() => {
-    if (user) {
-      setIsLoggedOut(false);
-      router.push("/dashboard");
-    } else {
-      setIsLoggedOut(true);
-      setNextPage(AUTH_PAGES.LOGIN);
-    }
-  }, [user, router]);
-
   if (!isLoggedOut) {
     return <LoadingScreen />;
   }
-
-  console.log(nextPage);
 
   return (
     <UserAuthWrapper>
@@ -51,10 +34,6 @@ export default function Login() {
       )}
       {nextPage === AUTH_PAGES.CREATE_PASSWORD && (
         <CreatePassword gotoAuthFormPage={gotoAuthFormPage} />
-      )}
-
-      {nextPage === AUTH_PAGES.SIGN_UP && (
-        <Signup gotoAuthFormPage={gotoAuthFormPage} />
       )}
     </UserAuthWrapper>
   );

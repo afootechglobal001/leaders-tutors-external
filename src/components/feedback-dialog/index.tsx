@@ -69,19 +69,19 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
 
   const content = isLoading ? (
     <div className="w-full h-full flex items-center justify-center">
-      <div className="w-[300px] space-y-2 min-h-[200px] bg-white rounded-xl p-10 flex flex-col gap-3 justify-center items-center text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--secondary-color)]"></div>
+      <div className="w-75 space-y-2 min-h-50 bg-white rounded-xl p-10 flex flex-col gap-3 justify-center items-center text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-(--secondary-color)"></div>
         <span>{loadingText || "Loading..."}</span>
       </div>
     </div>
   ) : (
     <div className="w-full h-full flex items-center justify-center">
       <div
-        className={`w-[90%] max-w-[500px] min-h-[250px] m-auto bg-white rounded-xl p-10 flex flex-col gap-3 justify-center items-center text-center border-2 ${borderClass} `}
+        className={`w-[90%] max-w-125 min-h-62.5 m-auto bg-white rounded-xl p-10 flex flex-col gap-3 justify-center items-center text-center border-2 ${borderClass} `}
         role="document"
       >
         {icon && (
-          <div className="flex-shrink-0 mb-2" aria-hidden="true">
+          <div className="shrink-0 mb-2" aria-hidden="true">
             {icon}
           </div>
         )}
@@ -89,16 +89,14 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
         {title && (
           <h3
             id="feedback-dialog-title"
-            className="font-bold-custom text-lg text-[var(--body-color)]"
+            className="font-bold-custom text-lg text-(--body-color)"
           >
             {title}
           </h3>
         )}
 
         {text && (
-          <p className="text-[var(--text-color)] text-sm leading-relaxed">
-            {text}
-          </p>
+          <p className="text-(--text-color) text-sm leading-relaxed">{text}</p>
         )}
         <div className="w-full mt-2 flex gap-4">
           {onClose && (

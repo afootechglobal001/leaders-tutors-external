@@ -26,7 +26,6 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
     defaultValues: {
       email: "",
       password: "",
-      user_type: "ADMIN",
     },
     resolver: zodResolver(AuthLoginSchema),
     mode: "onChange",
@@ -52,8 +51,8 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
     gotoAuthFormPage("resetPassword");
   };
 
-  const signUp = async () => {
-    gotoAuthFormPage("signup");
+  const handleSignUp = () => {
+    router.push("/sign-up");
   };
 
   return (
@@ -119,7 +118,7 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
             Don&apos;t have an account?{" "}
             <span
               className="text-(--primary-color) font-medium-custom cursor-pointer hover:underline"
-              onClick={signUp}
+              onClick={handleSignUp}
             >
               Sign Up Here
             </span>
@@ -127,11 +126,11 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
           <p className="text-sm text-(--text-color) text-center">
             By logging in to this portal, you agree to our
             <br />
-            <span className="text-(--primary-color) font-medium-custom cursor-pointer hover:underline">
+            <span className="text-(--secondary-color) font-medium-custom cursor-pointer hover:underline">
               Privacy Policy
             </span>{" "}
             and{" "}
-            <span className="text-(--primary-color) font-medium-custom cursor-pointer hover:underline">
+            <span className="text-(--secondary-color) font-medium-custom cursor-pointer hover:underline">
               Terms of Service
             </span>
             .
