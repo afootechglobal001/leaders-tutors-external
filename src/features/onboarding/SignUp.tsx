@@ -1,22 +1,38 @@
 "use client";
+
 import { UserAuthWrapper } from "@/features/auth/UserAuthWrapper";
 import { useRouter } from "next/navigation";
 import { Button, FormSelect, TextInput } from "@/components/form";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { DEPARTMENTS } from "@/constants/auth";
 import { SignupSchema, SignupSchemaType } from "@/types/auth/schema";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
+import { handleAppError } from "@/lib/axios";
+import { showToast } from "@/components/toast";
+import {
+  mapSignupPayload,
+  signupUser,
+  fetchDepartments,
+  fetchExams,
+} from "@/services/auth";
+
 export default function SignUp() {
   const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
+
+  // ✅ NEW STATE
+  const [departments, setDepartments] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
 
   const {
     register,
-    // handleSubmit,
+    handleSubmit,
     control,
-    // reset,
     formState: { errors },
   } = useForm<SignupSchemaType>({
     defaultValues: {
@@ -31,9 +47,51 @@ export default function SignUp() {
     resolver: zodResolver(SignupSchema) as Resolver<SignupSchemaType>,
     mode: "onChange",
   });
-  const handleVerifEmail = () => {
-    router.push("/sign-up/verify-account");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [deptOptions, examOptions] = await Promise.all([
+          fetchDepartments(),
+          fetchExams(),
+        ]);
+
+        setDepartments(deptOptions);
+        setExams(examOptions);
+      } catch (error) {
+        console.error(error);
+        showToast({
+          variant: "error",
+          title: "Error",
+          message: "Failed to load dropdown data",
+        });
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleSignup = async (data: SignupSchemaType) => {
+    try {
+      setIsPending(true);
+
+      await signupUser(mapSignupPayload(data));
+
+      showToast({
+        variant: "success",
+        title: "Signup successful",
+        message:
+          "Your account has been created successfully. You can now log in.",
+      });
+
+      router.push("/");
+    } catch (error) {
+      handleAppError({ showToast: true, error });
+    } finally {
+      setIsPending(false);
+    }
   };
+
   return (
     <UserAuthWrapper>
       <section className="flex flex-col gap-5 justify-center items-start animate-fade-down">
@@ -60,20 +118,28 @@ export default function SignUp() {
         <TextInput
           id="text"
           label="Full Name"
-          // disabled={isPending}
+          message={errors.fullName?.message}
+          disabled={isPending}
+          {...register("fullName")}
         />
 
         <TextInput
           id="email"
           label="Email Address"
-          // disabled={isPending}
+          message={errors.emailAddress?.message}
+          disabled={isPending}
+          {...register("emailAddress")}
         />
 
         <TextInput
           id="tel"
           label="Mobile Number"
-          // disabled={isPending}
+          message={errors.phoneNumber?.message}
+          disabled={isPending}
+          {...register("phoneNumber")}
         />
+
+        {/* ✅ Department */}
         <FormSelect
           id="department"
           label="Select Your Department"
@@ -81,8 +147,11 @@ export default function SignUp() {
           {...register("department", { required: true })}
           control={control}
           message={errors.department?.message}
-          options={DEPARTMENTS}
+          options={departments}
+          disabled={isPending || departments.length === 0}
         />
+
+        {/* ✅ Exam */}
         <FormSelect
           id="exam"
           label="Select External Exam"
@@ -90,32 +159,40 @@ export default function SignUp() {
           {...register("exam", { required: true })}
           control={control}
           message={errors.exam?.message}
-          options={DEPARTMENTS}
+          options={exams}
+          disabled={isPending || exams.length === 0}
         />
 
         <div className="w-full relative">
-          <TextInput id="password" type="password" label="Create Password" />
+          <TextInput
+            id="password"
+            type="password"
+            label="Create Password"
+            message={errors.password?.message}
+            disabled={isPending}
+            {...register("password")}
+          />
         </div>
 
-        {/* Confirm Password */}
         <div className="w-full relative">
           <TextInput
             id="confirmPassword"
             type="password"
             label="Confirm Password"
+            message={errors.confirmPassword?.message}
+            disabled={isPending}
+            {...register("confirmPassword")}
           />
         </div>
 
-        {/* BUTTON */}
         <Button
           text="Sign-Up"
           frontIcon={<ArrowRight />}
           fullWidth
-          // isLoading={isPending}
-          onClick={handleVerifEmail}
+          isLoading={isPending}
+          onClick={handleSubmit(handleSignup)}
         />
 
-        {/* dont have an account? sign up here */}
         <div className="flex flex-col gap-4 items-center justify-center w-full pt-4 border-t border-gray-300">
           <p className="text-sm text-(--text-color)">
             Already have an account?{" "}

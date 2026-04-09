@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/authStore";
 let cachedToken: string | null = null;
 let tokenExpiry: number = 0;
 const TOKEN_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const DEVICE_ID_STORAGE_KEY = "leaders-tutors-device-id";
 
 type StatusCode = 401 | 403 | 404 | 500;
 
@@ -59,6 +60,36 @@ const getCachedToken = async (): Promise<string | null> => {
     return null;
   }
 };
+
+const getClientDeviceId = () => {
+  if (typeof window === "undefined") {
+    return "server-device";
+  }
+
+  const storedDeviceId = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY);
+
+  if (storedDeviceId) {
+    return storedDeviceId;
+  }
+
+  const generatedDeviceId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `device-${Date.now()}`;
+
+  window.localStorage.setItem(DEVICE_ID_STORAGE_KEY, generatedDeviceId);
+  return generatedDeviceId;
+};
+
+const getRequestMetadataHeaders = () => ({
+  apiKey: process.env.NEXT_PUBLIC_API_KEY || "",
+  userOsBrowser:
+    typeof window === "undefined"
+      ? "server"
+      : window.navigator.userAgent || "unknown-browser",
+  userIpAddress: process.env.NEXT_PUBLIC_USER_IP_ADDRESS || "0.0.0.0",
+  userDeviceId: getClientDeviceId(),
+});
 
 /**
  * =========================
@@ -122,10 +153,18 @@ const setupInterceptors = (instance: AxiosInstance) => {
       config: InternalAxiosRequestConfig,
     ): Promise<InternalAxiosRequestConfig> => {
       const token = await getCachedToken();
+      const requestHeaders = getRequestMetadataHeaders();
+
+      if (config.headers) {
+        Object.entries(requestHeaders).forEach(([key, value]) => {
+          if (value) {
+            config.headers[key] = value;
+          }
+        });
+      }
 
       if (token && config.headers) {
-        // ✅ Use correct header format (check backend: usually "Bearer")
-        config.headers.Authorization = `Token ${token}`;
+        config.headers.Authorization = `Bearer ${token}`;
       }
 
       return config;
