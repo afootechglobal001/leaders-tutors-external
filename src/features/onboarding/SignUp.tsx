@@ -33,6 +33,7 @@ export default function SignUp() {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<SignupSchemaType>({
     defaultValues: {
@@ -47,6 +48,8 @@ export default function SignUp() {
     resolver: zodResolver(SignupSchema) as Resolver<SignupSchemaType>,
     mode: "onChange",
   });
+
+  const selectedDepartment = watch("department");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,6 +73,7 @@ export default function SignUp() {
 
     fetchData();
   }, []);
+
 
   const handleSignup = async (data: SignupSchemaType) => {
     try {
@@ -111,7 +115,7 @@ export default function SignUp() {
           </h1>
           <p>
             Kindly provide the required information to{" "}
-            <strong>sign up to Limo Managers Client Portal.</strong>
+            <strong>sign up to Leaders Tutors External Exams.</strong>
           </p>
         </div>
 
@@ -139,17 +143,19 @@ export default function SignUp() {
           {...register("phoneNumber")}
         />
 
-        {/* ✅ Department */}
-        <FormSelect
-          id="department"
-          label="Select Your Department"
-          placeholder="Select Here"
-          {...register("department", { required: true })}
-          control={control}
-          message={errors.department?.message}
-          options={departments}
-          disabled={isPending || departments.length === 0}
-        />
+        <div className="w-full">
+          {/* ✅ Department */}
+          <FormSelect
+            id="department"
+            label="Department"
+            placeholder="Select Here"
+            {...register("department", { required: true })}
+            control={control}
+            message={errors.department?.message}
+            options={departments}
+            disabled={isPending}
+          />
+        </div>
 
         {/* ✅ Exam */}
         <FormSelect
@@ -160,7 +166,7 @@ export default function SignUp() {
           control={control}
           message={errors.exam?.message}
           options={exams}
-          disabled={isPending || exams.length === 0}
+          disabled={isPending}
         />
 
         <div className="w-full relative">

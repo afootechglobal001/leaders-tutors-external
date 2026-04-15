@@ -51,26 +51,43 @@ interface DropdownOption {
 }
 
 export const fetchDepartments = async (): Promise<DropdownOption[]> => {
-  const res = await apiClient.get<{ data: Department[] }>(
+  const data = await apiClient.get<Department[]>(
     "/preset-data/fetch-departments",
   );
 
-  const data = Array.isArray(res) ? res : res.data || [];
+  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
 
-  return data.map((item: Department) => ({
+  return finalData.map((item: Department) => ({
     value: String(item.departmentId),
     label: item.departmentName,
   }));
 };
 
+export const fetchSubjects = async (
+  departmentId?: string,
+): Promise<DropdownOption[]> => {
+  const data = await apiClient.get<any[]>(
+    departmentId
+      ? `/preset-data/fetch-subjects?departmentId=${departmentId}`
+      : "/preset-data/fetch-subjects",
+  );
+
+  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
+
+  return finalData.map((item: any) => ({
+    value: String(item.subjectId || item.id),
+    label: item.subjectName || item.name,
+  }));
+};
+
 export const fetchExams = async (): Promise<DropdownOption[]> => {
-  const res = await apiClient.get<{ data: Exam[] }>(
+  const data = await apiClient.get<Exam[]>(
     "/preset-data/fetch-external-exams",
   );
 
-  const data = Array.isArray(res) ? res : res.data || [];
+  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
 
-  return data.map((item: Exam) => ({
+  return finalData.map((item: Exam) => ({
     value: item.examId,
     label: item.examAbbreviation,
   }));
