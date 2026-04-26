@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import TutorialWatch from "@/features/portal/tutorials/TutorialWatch";
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <TutorialWatch />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <TutorialWatch />
+    </Suspense>
+  );
 }

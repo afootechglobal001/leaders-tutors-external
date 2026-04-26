@@ -28,8 +28,9 @@ export const SideBar = () => {
             {SIDEBAR_TOP_LINKS.map((link) => (
               <Link href={link.href} key={link.name}>
                 <li
-                  className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-4 py-2.5 rounded-lg ${pathname === link.href ? "bg-gray-500/10" : ""
-                    }`}
+                  className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-4 py-2.5 rounded-lg ${
+                    pathname === link.href ? "bg-gray-500/10" : ""
+                  }`}
                 >
                   {link.icon && (
                     <link.icon
@@ -49,8 +50,9 @@ export const SideBar = () => {
           {SIDEBAR_BOTTOM_LINKS.map((link) => (
             <Link href={link.href} key={link.name}>
               <li
-                className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-4 py-2.5 rounded-lg ${pathname === link.href ? "bg-gray-500/10" : ""
-                  }`}
+                className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-4 py-2.5 rounded-lg ${
+                  pathname === link.href ? "bg-gray-500/10" : ""
+                }`}
               >
                 {link.icon && (
                   <link.icon

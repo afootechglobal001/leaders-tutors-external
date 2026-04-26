@@ -10,14 +10,18 @@ interface WalletLoadModalProps {
   onSuccess: () => void;
 }
 
-export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLoadModalProps) {
+export default function WalletLoadModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: WalletLoadModalProps) {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount < 100) {
       setError("Minimum amount is ₦100");
@@ -27,9 +31,9 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
     try {
       setIsLoading(true);
       setError("");
-      
+
       const paymentData = await initiateWalletLoad(numAmount);
-      
+
       // In a real app, you would redirect to the payment URL
       // For now, we'll just simulate success
       if (paymentData.paymentUrl) {
@@ -40,7 +44,7 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
           setAmount("");
         }, 2000);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to initiate payment. Please try again.");
     } finally {
       setIsLoading(false);
@@ -55,8 +59,8 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Wallet className="w-5 h-5 text-green-600" />
+            <div className="rounded-lg bg-[var(--primary-color-light)] p-2">
+              <Wallet className="h-5 w-5 text-[var(--primary-color)]" />
             </div>
             <h2 className="text-lg font-bold text-gray-900">Load Wallet</h2>
           </div>
@@ -95,14 +99,16 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
 
           {/* Quick Amount Buttons */}
           <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Quick Select</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Quick Select
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {[1000, 5000, 10000].map((quickAmount) => (
                 <button
                   key={quickAmount}
                   type="button"
                   onClick={() => setAmount(quickAmount.toString())}
-                  className="p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-sm font-semibold"
+                  className="rounded-lg border border-[var(--border-color)] p-3 text-sm font-semibold transition-colors hover:border-[var(--primary-color)] hover:bg-[var(--primary-color-light)] hover:text-[var(--primary-color)]"
                 >
                   ₦{quickAmount.toLocaleString()}
                 </button>
@@ -112,10 +118,14 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
 
           {/* Payment Method */}
           <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Payment Method</p>
-            <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-              <CreditCard className="w-5 h-5 text-gray-400" />
-              <span className="text-sm text-gray-700">Card Payment (Paystack)</span>
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Payment Method
+            </p>
+            <div className="flex items-center gap-3 rounded-lg border border-[var(--border-color)] p-3">
+              <CreditCard className="h-5 w-5 text-[var(--primary-color)]" />
+              <span className="text-sm text-gray-700">
+                Card Payment (Paystack)
+              </span>
             </div>
           </div>
 

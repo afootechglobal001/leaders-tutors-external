@@ -2,7 +2,7 @@ export interface DashboardSummary {
   subscriptionExpiresIn: number;
   walletBalance: number;
   currency: string;
-  subscriptionStatus?: 'active' | 'expired' | 'pending';
+  subscriptionStatus?: "active" | "expired" | "pending";
   subscriptionType?: string;
 }
 

@@ -33,7 +33,6 @@ export default function SignUp() {
     register,
     handleSubmit,
     control,
-    watch,
     formState: { errors },
   } = useForm<SignupSchemaType>({
     defaultValues: {
@@ -48,8 +47,6 @@ export default function SignUp() {
     resolver: zodResolver(SignupSchema) as Resolver<SignupSchemaType>,
     mode: "onChange",
   });
-
-  const selectedDepartment = watch("department");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,7 +70,6 @@ export default function SignUp() {
 
     fetchData();
   }, []);
-
 
   const handleSignup = async (data: SignupSchemaType) => {
     try {

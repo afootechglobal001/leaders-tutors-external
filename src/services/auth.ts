@@ -34,9 +34,10 @@ export interface PendingSignupVerification {
 }
 
 type AuthApiResponse = Record<string, unknown>;
+type ApiListResponse<T> = T[] | { data?: T[] };
 
 interface Department {
-  departmentId: number;
+  departmentId: number | string;
   departmentName: string;
 }
 
@@ -45,19 +46,32 @@ interface Exam {
   examAbbreviation: string;
 }
 
+interface Subject {
+  subjectId?: string | number;
+  id?: string | number;
+  subjectName?: string;
+  name?: string;
+}
+
 interface DropdownOption {
   value: string;
   label: string;
 }
 
+const extractArray = <T>(response: ApiListResponse<T>): T[] => {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  return Array.isArray(response.data) ? response.data : [];
+};
+
 export const fetchDepartments = async (): Promise<DropdownOption[]> => {
-  const data = await apiClient.get<Department[]>(
+  const data = await apiClient.get<ApiListResponse<Department>>(
     "/preset-data/fetch-departments",
   );
 
-  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
-
-  return finalData.map((item: Department) => ({
+  return extractArray(data).map((item) => ({
     value: String(item.departmentId),
     label: item.departmentName,
   }));
@@ -66,28 +80,24 @@ export const fetchDepartments = async (): Promise<DropdownOption[]> => {
 export const fetchSubjects = async (
   departmentId?: string,
 ): Promise<DropdownOption[]> => {
-  const data = await apiClient.get<any[]>(
+  const data = await apiClient.get<ApiListResponse<Subject>>(
     departmentId
       ? `/preset-data/fetch-subjects?departmentId=${departmentId}`
       : "/preset-data/fetch-subjects",
   );
 
-  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
-
-  return finalData.map((item: any) => ({
+  return extractArray(data).map((item) => ({
     value: String(item.subjectId || item.id),
-    label: item.subjectName || item.name,
+    label: item.subjectName || item.name || "Unnamed Subject",
   }));
 };
 
 export const fetchExams = async (): Promise<DropdownOption[]> => {
-  const data = await apiClient.get<Exam[]>(
+  const data = await apiClient.get<ApiListResponse<Exam>>(
     "/preset-data/fetch-external-exams",
   );
 
-  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
-
-  return finalData.map((item: Exam) => ({
+  return extractArray(data).map((item) => ({
     value: item.examId,
     label: item.examAbbreviation,
   }));

@@ -3,14 +3,6 @@ import api from "./axios";
 
 type ApiResponse<T> = { data: T };
 
-// fix @danieldare2025
-// function extractData<T>(response: unknown): T {
-//   // Todo: @danieldare2025 fix bad typing
-//   return typeof (response as any)?.data?.data === undefined
-//     ? (response as any)?.data?.data
-//     : (response as any)?.data;
-// }
-
 function extractData<T>(response: AxiosResponse<ApiResponse<T>>): T {
   const inner = response.data;
   return (inner && "data" in inner ? inner.data : inner) as T;

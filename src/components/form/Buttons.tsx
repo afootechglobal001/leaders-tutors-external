@@ -4,7 +4,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   backIcon?: React.ReactNode;
   className?: string;
   isLoading?: boolean;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "danger" | "outline";
   fullWidth?: boolean;
   size?: "sm" | "lg";
 }
@@ -23,7 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const isDisabled = disabled || isLoading;
   const baseClasses =
-    "flex inline-flex items-center justify-center p-5 gap-2 font-medium-custom transition-all duration-200 hover:bg-[length:200%_100%] hover:bg-right hover:scale-105";
+    "inline-flex items-center justify-center gap-2 border p-5 font-medium-custom transition-all duration-200 hover:bg-[length:200%_100%] hover:bg-right";
 
   const currentSize =
     size === "sm"
@@ -33,10 +33,12 @@ export const Button: React.FC<ButtonProps> = ({
   // ✅ Backgrounds with darker hover states
   const buttonStyles =
     variant === "primary"
-      ? "bg-gradient-to-r from-[var(--primary-hover-color)] to-[var(--secondary-hover-color)] bg-left transition-[background-position,transform] duration-400 ease-in-out transform text-white"
+      ? "border-transparent bg-gradient-to-r from-[var(--primary-hover-color)] to-[var(--secondary-hover-color)] bg-left text-white transition-[background-position,transform] duration-400 ease-in-out"
       : variant === "secondary"
-        ? "bg-gray-200 hover:bg-gray-600 text-black hover:text-white"
-        : "bg-red-500 hover:bg-red-700 text-white";
+        ? "border-transparent bg-[var(--primary-color-light)] text-[var(--primary-color)] hover:bg-[var(--primary-color)] hover:text-white"
+        : variant === "outline"
+          ? "border-[var(--primary-color)] bg-white text-[var(--primary-color)] hover:bg-[var(--primary-color-light)] hover:text-[var(--primary-hover-color)]"
+          : "border-transparent bg-[var(--failed-color)] text-white hover:brightness-90";
 
   const disabledStyles = isDisabled
     ? "opacity-50 cursor-not-allowed pointer-events-none"
