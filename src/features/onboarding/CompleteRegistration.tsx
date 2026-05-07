@@ -139,12 +139,19 @@ export function CompleteRegistration() {
         | string
         | undefined;
 
+      console.log("Access key found:", accessKey);
+      console.log("Data object:", dataObj);
+
       if (accessKey && pendingData) {
         // Automatically log the user in
+        console.log("Auto-login: normalizing auth response...");
         const { token, user } = normalizeAuthResponse(
           signupSuccessResponse,
           pendingData.emailAddress,
         );
+
+        console.log("Auto-login: setting auth with token:", token);
+        console.log("Auto-login: user data:", user);
 
         setAuth(user, token);
 
@@ -154,9 +161,11 @@ export function CompleteRegistration() {
           message: "Registration successful. You are now logged in.",
         });
 
+        console.log("Auto-login: redirecting to dashboard...");
         // Redirect to dashboard
         router.push("/dashboard");
       } else {
+        console.log("No access key found, redirecting to login");
         // No access token, redirect to login
         showToast({
           variant: "success",

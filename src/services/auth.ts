@@ -287,15 +287,21 @@ export const normalizeAuthResponse = (
   response: AuthApiResponse,
   fallbackEmail: string,
 ): { token: string; user: AuthResponse } => {
+  console.log("normalizeAuthResponse - Full response:", response);
+
   // Check if data is nested in a 'data' property
   const dataObj = response?.data as Record<string, unknown> | undefined;
   const sourceData = dataObj || response;
+
+  console.log("normalizeAuthResponse - Source data:", sourceData);
 
   const token = getStringValue(sourceData as AuthApiResponse, [
     "accessToken",
     "token",
     "accessKey",
   ]);
+
+  console.log("normalizeAuthResponse - Extracted token:", token);
 
   if (!token) {
     throw new Error("Login succeeded but no access token was returned.");
@@ -304,7 +310,7 @@ export const normalizeAuthResponse = (
   const fullName = getStringValue(sourceData as AuthApiResponse, ["fullName"]);
   const { firstName, lastName } = getNameParts(fullName);
 
-  return {
+  const normalizedUser = {
     token,
     user: {
       token,
@@ -351,6 +357,10 @@ export const normalizeAuthResponse = (
         ]) || null,
     },
   };
+
+  console.log("normalizeAuthResponse - Normalized result:", normalizedUser);
+
+  return normalizedUser;
 };
 
 /**
