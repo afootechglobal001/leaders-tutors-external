@@ -134,7 +134,7 @@ export default function WalletLoadModal({
             <Button
               type="button"
               text="Cancel"
-              variant="outline"
+              variant="secondary"
               onClick={onClose}
               className="flex-1"
               disabled={isLoading}
