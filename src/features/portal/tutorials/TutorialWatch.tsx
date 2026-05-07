@@ -133,7 +133,7 @@ export default function TutorialWatch() {
             <Link href="/tutorials">
               <Button
                 text="Back to Tutorials"
-                variant="outline"
+                variant="secondary"
                 className="px-8"
               />
             </Link>
@@ -151,7 +151,7 @@ export default function TutorialWatch() {
           <Link href="/tutorials">
             <Button
               text=""
-              variant="outline"
+              variant="secondary"
               size="sm"
               className="p-2 border-gray-200 hover:border-blue-500"
             >
@@ -235,7 +235,7 @@ export default function TutorialWatch() {
             <Link href="/tutorials">
               <Button
                 text="Back to All Tutorials"
-                variant="outline"
+                variant="secondary"
                 className="px-6"
               />
             </Link>
