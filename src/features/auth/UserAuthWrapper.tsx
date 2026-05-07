@@ -37,8 +37,8 @@ export const UserAuthWrapper = ({ children }: UserAuthWrapperProps) => {
           </p>
         </div>
       </section>
-      <section className="flex-1 flex justify-center items-center px-8 py-10">
-        <div className="w-full max-w-[550px]">{children}</div>
+      <section className="w-full max-w-[calc(100%-600px)] flex justify-center items-center min-w-[400px]">
+        <div className="w-125 p-4">{children}</div>
       </section>
     </main>
   );

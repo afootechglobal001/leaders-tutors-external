@@ -12,12 +12,15 @@ import {
   readPendingSignupVerification,
   fetchPaymentMethods,
   completeSignupSuccess,
+  normalizeAuthResponse,
   type PendingSignupVerification,
 } from "@/services/auth";
 import { PaystackModal } from "@/components/payment/PaystackModal";
+import { useAuthStore } from "@/store/authStore";
 
 export function CompleteRegistration() {
   const router = useRouter();
+  const { setAuth } = useAuthStore();
   const [isPending, setIsPending] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [referralCode, setReferralCode] = useState("");
@@ -103,14 +106,10 @@ export function CompleteRegistration() {
       setIsPending(true);
 
       console.log("Payment reference from Paystack:", reference);
-      console.log(
-        "Stored payment proceed data:",
-        pendingData.paymentProceedData,
-      );
 
       // IMPORTANT: Use the transactionId from the signup response, NOT the Paystack reference
-      const transactionId = pendingData.paymentProceedData?.transactionId;
-      const paymentKey = pendingData.paymentProceedData?.paystackPaymentKey;
+      const transactionId = pendingData?.paymentProceedData?.transactionId;
+      const paymentKey = pendingData?.paymentProceedData?.paystackPaymentKey;
 
       if (!transactionId || !paymentKey) {
         console.error("Missing transaction data:", {
@@ -127,17 +126,45 @@ export function CompleteRegistration() {
         paymentKey,
       });
 
-      await completeSignupSuccess(transactionId, paymentKey);
+      const signupSuccessResponse = await completeSignupSuccess(
+        transactionId,
+        paymentKey,
+      );
+      console.log("Signup success response:", signupSuccessResponse);
 
-      // Show success toast and redirect to login
-      showToast({
-        variant: "success",
-        title: "Registration Successful!",
-        message: "Your account has been created. Please log in now.",
-      });
+      // Check if the response contains access token
+      const responseData = signupSuccessResponse as Record<string, unknown>;
+      const dataObj = responseData?.data as Record<string, unknown> | undefined;
+      const accessKey = (dataObj?.accessKey || responseData?.accessKey) as
+        | string
+        | undefined;
 
-      // Redirect to login page
-      router.push("/");
+      if (accessKey && pendingData) {
+        // Automatically log the user in
+        const { token, user } = normalizeAuthResponse(
+          signupSuccessResponse,
+          pendingData.emailAddress,
+        );
+
+        setAuth(user, token);
+
+        showToast({
+          variant: "success",
+          title: "Welcome!",
+          message: "Registration successful. You are now logged in.",
+        });
+
+        // Redirect to dashboard
+        router.push("/dashboard");
+      } else {
+        // No access token, redirect to login
+        showToast({
+          variant: "success",
+          title: "Registration Successful!",
+          message: "Your account has been created. Please log in now.",
+        });
+        router.push("/");
+      }
     } catch (error) {
       console.error("Error in handlePaymentSuccess:", error);
       // Show success toast anyway since payment was successful

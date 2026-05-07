@@ -287,38 +287,68 @@ export const normalizeAuthResponse = (
   response: AuthApiResponse,
   fallbackEmail: string,
 ): { token: string; user: AuthResponse } => {
-  const token = getStringValue(response, ["accessToken", "token", "accessKey"]);
+  // Check if data is nested in a 'data' property
+  const dataObj = response?.data as Record<string, unknown> | undefined;
+  const sourceData = dataObj || response;
+
+  const token = getStringValue(sourceData as AuthApiResponse, [
+    "accessToken",
+    "token",
+    "accessKey",
+  ]);
 
   if (!token) {
     throw new Error("Login succeeded but no access token was returned.");
   }
 
-  const fullName = getStringValue(response, ["fullName"]);
+  const fullName = getStringValue(sourceData as AuthApiResponse, ["fullName"]);
   const { firstName, lastName } = getNameParts(fullName);
 
   return {
     token,
     user: {
       token,
-      id: getStringValue(response, ["id", "userId"], "unknown-user"),
-      email: getStringValue(response, ["email", "emailAddress"], fallbackEmail),
+      id: getStringValue(
+        sourceData as AuthApiResponse,
+        ["id", "userId"],
+        "unknown-user",
+      ),
+      email: getStringValue(
+        sourceData as AuthApiResponse,
+        ["email", "emailAddress"],
+        fallbackEmail,
+      ),
       first_name: getStringValue(
-        response,
+        sourceData as AuthApiResponse,
         ["first_name", "firstName"],
         firstName,
       ),
-      last_name: getStringValue(response, ["last_name", "lastName"], lastName),
+      last_name: getStringValue(
+        sourceData as AuthApiResponse,
+        ["last_name", "lastName"],
+        lastName,
+      ),
       phone_number:
-        getStringValue(response, ["phone_number", "phoneNumber"]) || null,
+        getStringValue(sourceData as AuthApiResponse, [
+          "phone_number",
+          "phoneNumber",
+        ]) || null,
       last_active: getStringValue(
-        response,
+        sourceData as AuthApiResponse,
         ["last_active", "lastActive", "lastLoginTime"],
         new Date().toISOString(),
       ),
-      role: getStringValue(response, ["role"], "User"),
-      status: getStringValue(response, ["status"], "Active"),
+      role: getStringValue(sourceData as AuthApiResponse, ["role"], "User"),
+      status: getStringValue(
+        sourceData as AuthApiResponse,
+        ["status"],
+        "Active",
+      ),
       middle_name:
-        getStringValue(response, ["middle_name", "middleName"]) || null,
+        getStringValue(sourceData as AuthApiResponse, [
+          "middle_name",
+          "middleName",
+        ]) || null,
     },
   };
 };
@@ -348,16 +378,11 @@ export const verifySignupPayment = async (
 export const completeSignupSuccess = async (
   transactionId: string,
   paymentKey: string,
-): Promise<boolean> => {
-  try {
-    await apiClient.get(
-      `/user/auth/signup-success?transactionId=${transactionId}&paymentKey=${paymentKey}`,
-    );
-    return true;
-  } catch (error) {
-    console.error("Signup success call failed:", error);
-    return false;
-  }
+): Promise<AuthApiResponse> => {
+  const response = await apiClient.get<AuthApiResponse>(
+    `/user/auth/signup-success?transactionId=${transactionId}&paymentKey=${paymentKey}`,
+  );
+  return response;
 };
 
 /**
