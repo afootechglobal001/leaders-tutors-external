@@ -10,14 +10,18 @@ interface WalletLoadModalProps {
   onSuccess: () => void;
 }
 
-export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLoadModalProps) {
+export default function WalletLoadModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: WalletLoadModalProps) {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount < 100) {
       setError("Minimum amount is ₦100");
@@ -27,9 +31,9 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
     try {
       setIsLoading(true);
       setError("");
-      
+
       const paymentData = await initiateWalletLoad(numAmount);
-      
+
       // In a real app, you would redirect to the payment URL
       // For now, we'll just simulate success
       if (paymentData.paymentUrl) {
@@ -95,7 +99,9 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
 
           {/* Quick Amount Buttons */}
           <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Quick Select</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Quick Select
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {[1000, 5000, 10000].map((quickAmount) => (
                 <button
@@ -112,10 +118,14 @@ export default function WalletLoadModal({ isOpen, onClose, onSuccess }: WalletLo
 
           {/* Payment Method */}
           <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Payment Method</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Payment Method
+            </p>
             <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
               <CreditCard className="w-5 h-5 text-gray-400" />
-              <span className="text-sm text-gray-700">Card Payment (Paystack)</span>
+              <span className="text-sm text-gray-700">
+                Card Payment (Paystack)
+              </span>
             </div>
           </div>
 

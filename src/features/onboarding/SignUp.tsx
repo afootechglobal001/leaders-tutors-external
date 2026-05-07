@@ -17,13 +17,14 @@ import {
   signupUser,
   fetchDepartments,
   fetchExams,
+  getSignupVerificationData,
+  savePendingSignupVerification,
 } from "@/services/auth";
 
 export default function SignUp() {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
-  // ✅ NEW STATE
   const [departments, setDepartments] = useState<
     { value: string; label: string }[]
   >([]);
@@ -33,7 +34,6 @@ export default function SignUp() {
     register,
     handleSubmit,
     control,
-    watch,
     formState: { errors },
   } = useForm<SignupSchemaType>({
     defaultValues: {
@@ -48,8 +48,6 @@ export default function SignUp() {
     resolver: zodResolver(SignupSchema) as Resolver<SignupSchemaType>,
     mode: "onChange",
   });
-
-  const selectedDepartment = watch("department");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,22 +72,33 @@ export default function SignUp() {
     fetchData();
   }, []);
 
-
   const handleSignup = async (data: SignupSchemaType) => {
     try {
       setIsPending(true);
 
-      await signupUser(mapSignupPayload(data));
+      const response = await signupUser(mapSignupPayload(data));
+
+      console.log("Full signup response:", JSON.stringify(response, null, 2));
+
+      // Use the helper function to extract all data including paymentProceedData
+      const verificationData = getSignupVerificationData(
+        response,
+        mapSignupPayload(data),
+      );
+
+      console.log("Saving verification data:", verificationData);
+      savePendingSignupVerification(verificationData);
 
       showToast({
         variant: "success",
-        title: "Signup successful",
-        message:
-          "Your account has been created successfully. You can now log in.",
+        title: "Account Created",
+        message: "Please proceed to complete your registration.",
       });
 
-      router.push("/");
+      // Redirect to complete registration page
+      router.push("/sign-up/complete-registration");
     } catch (error) {
+      console.error("Signup error:", error);
       handleAppError({ showToast: true, error });
     } finally {
       setIsPending(false);
