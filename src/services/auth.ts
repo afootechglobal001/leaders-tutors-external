@@ -68,7 +68,9 @@ export const fetchDepartments = async (): Promise<DropdownOption[]> => {
     "/preset-data/fetch-departments",
   );
 
-  const finalData = Array.isArray(data) ? data : (data as { data?: Department[] })?.data || [];
+  const finalData = Array.isArray(data)
+    ? data
+    : (data as { data?: Department[] })?.data || [];
 
   return finalData.map((item: Department) => ({
     value: String(item.departmentId),
@@ -85,18 +87,28 @@ export const fetchSubjects = async (
       : "/preset-data/fetch-subjects",
   );
 
-  const finalData = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data || [];
+  const finalData = Array.isArray(data)
+    ? data
+    : (data as { data?: unknown[] })?.data || [];
 
   return finalData.map((item: unknown) => ({
-    value: String((item as { subjectId?: unknown; id?: unknown }).subjectId || (item as { id?: unknown }).id),
-    label: (item as { subjectName?: string; name?: string }).subjectName || (item as { name?: string }).name || "",
+    value: String(
+      (item as { subjectId?: unknown; id?: unknown }).subjectId ||
+        (item as { id?: unknown }).id,
+    ),
+    label:
+      (item as { subjectName?: string; name?: string }).subjectName ||
+      (item as { name?: string }).name ||
+      "",
   }));
 };
 
 export const fetchExams = async (): Promise<DropdownOption[]> => {
   const data = await apiClient.get<Exam[]>("/preset-data/fetch-external-exams");
 
-  const finalData = Array.isArray(data) ? data : (data as any)?.data || [];
+  const finalData = Array.isArray(data)
+    ? data
+    : (data as { data?: Exam[] })?.data || [];
 
   return finalData.map((item: Exam) => ({
     value: item.examId,
@@ -114,7 +126,9 @@ export const fetchPaymentMethods = async (): Promise<DropdownOption[]> => {
     "/preset-data/fetch-payment-methods?paymentMethodIds=CC,BT",
   );
 
-  const finalData = Array.isArray(data) ? data : (data as { data?: PaymentMethod[] })?.data || [];
+  const finalData = Array.isArray(data)
+    ? data
+    : (data as { data?: PaymentMethod[] })?.data || [];
 
   return finalData.map((item: PaymentMethod) => ({
     value: item.paymentMethodId,
@@ -192,15 +206,20 @@ export const getSignupVerificationData = (
     const responseData = response as Record<string, unknown>;
     const dataObj = responseData?.data as Record<string, unknown> | undefined;
     const userObj = responseData?.user as Record<string, unknown> | undefined;
-    
+
     extractedUserId =
       getStringValue(response, ["userId", "id"]) ||
-      (dataObj ? getStringValue(dataObj as AuthApiResponse, ["userId", "id"]) : null) ||
-      (userObj ? getStringValue(userObj as AuthApiResponse, ["userId", "id"]) : null);
+      (dataObj
+        ? getStringValue(dataObj as AuthApiResponse, ["userId", "id"])
+        : null) ||
+      (userObj
+        ? getStringValue(userObj as AuthApiResponse, ["userId", "id"])
+        : null);
   }
 
   // Extract payment proceed data if available
-  const paymentProceedData = (response as Record<string, unknown>)?.paymentProceedData as PendingSignupVerification["paymentProceedData"];
+  const paymentProceedData = (response as Record<string, unknown>)
+    ?.paymentProceedData as PendingSignupVerification["paymentProceedData"];
 
   console.log("Full signup response:", JSON.stringify(response, null, 2));
   console.log("Payment proceed data:", paymentProceedData);

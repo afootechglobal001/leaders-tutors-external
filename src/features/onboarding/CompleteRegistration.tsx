@@ -21,7 +21,8 @@ export function CompleteRegistration() {
   const [isPending, setIsPending] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [referralCode, setReferralCode] = useState("");
-  const [pendingData, setPendingData] = useState<PendingSignupVerification | null>(null);
+  const [pendingData, setPendingData] =
+    useState<PendingSignupVerification | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<
     { value: string; label: string }[]
   >([]);

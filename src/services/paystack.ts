@@ -53,8 +53,10 @@ export const loadPaystackScript = (): Promise<void> => {
  * Initialize Paystack payment popup
  */
 export const initializePaystackPayment = (config: PaystackConfig): void => {
-  const windowWithPaystack = window as unknown as { PaystackPop?: { setup: (config: unknown) => { openIframe: () => void } } };
-  
+  const windowWithPaystack = window as unknown as {
+    PaystackPop?: { setup: (config: unknown) => { openIframe: () => void } };
+  };
+
   if (typeof window === "undefined" || !windowWithPaystack.PaystackPop) {
     throw new Error("Paystack script not loaded");
   }
