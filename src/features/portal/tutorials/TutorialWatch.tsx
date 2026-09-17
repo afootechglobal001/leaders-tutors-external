@@ -124,7 +124,7 @@ export default function TutorialWatch() {
             <Link href="/tutorials">
               <Button
                 text="Back to Tutorials"
-                variant="outline"
+                variant="secondary"
                 className="px-8"
               />
             </Link>
@@ -141,12 +141,13 @@ export default function TutorialWatch() {
         <div className="flex items-center gap-4">
           <Link href="/tutorials">
             <Button
-              text="Back"
-              variant="outline"
-              backIcon={<ArrowLeft className="w-4 h-4" />}
+              text=""
+              variant="secondary"
               size="sm"
-              className="p-2"
-            />
+              className="p-2 border-gray-200 hover:border-blue-500"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
           </Link>
           <div>
             <h1 className="text-lg font-bold text-gray-900">
@@ -225,7 +226,7 @@ export default function TutorialWatch() {
             <Link href="/tutorials">
               <Button
                 text="Back to All Tutorials"
-                variant="outline"
+                variant="secondary"
                 className="px-6"
               />
             </Link>

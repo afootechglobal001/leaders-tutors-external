@@ -13,7 +13,6 @@ import {
 } from "@/services/portal";
 import { DashboardSummary, SubjectAccordionData } from "@/types/portal";
 import WalletLoadModal from "@/components/wallet/WalletLoadModal";
-import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 
 export default function Dashboard() {
   const { user, token, userEnrollment, setUserEnrollment } = useAuthStore();
@@ -28,7 +27,6 @@ export default function Dashboard() {
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -178,14 +176,9 @@ export default function Dashboard() {
               text="Click here to subscribe"
               variant="primary"
               className="px-8"
-              onClick={() => setShowSubscriptionModal(true)}
             />
           </div>
         </section>
-        <SubscriptionModal
-          isOpen={showSubscriptionModal}
-          onClose={() => setShowSubscriptionModal(false)}
-        />
       </PortalWrapper>
     );
   }

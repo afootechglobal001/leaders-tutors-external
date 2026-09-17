@@ -59,8 +59,8 @@ export default function WalletLoadModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-[var(--primary-color-light)] p-2">
-              <Wallet className="h-5 w-5 text-[var(--primary-color)]" />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Wallet className="w-5 h-5 text-green-600" />
             </div>
             <h2 className="text-lg font-bold text-gray-900">Load Wallet</h2>
           </div>
@@ -108,7 +108,7 @@ export default function WalletLoadModal({
                   key={quickAmount}
                   type="button"
                   onClick={() => setAmount(quickAmount.toString())}
-                  className="rounded-lg border border-[var(--border-color)] p-3 text-sm font-semibold transition-colors hover:border-[var(--primary-color)] hover:bg-[var(--primary-color-light)] hover:text-[var(--primary-color)]"
+                  className="p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-sm font-semibold"
                 >
                   ₦{quickAmount.toLocaleString()}
                 </button>
@@ -121,8 +121,8 @@ export default function WalletLoadModal({
             <p className="text-sm font-semibold text-gray-700 mb-3">
               Payment Method
             </p>
-            <div className="flex items-center gap-3 rounded-lg border border-[var(--border-color)] p-3">
-              <CreditCard className="h-5 w-5 text-[var(--primary-color)]" />
+            <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <CreditCard className="w-5 h-5 text-gray-400" />
               <span className="text-sm text-gray-700">
                 Card Payment (Paystack)
               </span>
@@ -134,7 +134,7 @@ export default function WalletLoadModal({
             <Button
               type="button"
               text="Cancel"
-              variant="outline"
+              variant="secondary"
               onClick={onClose}
               className="flex-1"
               disabled={isLoading}

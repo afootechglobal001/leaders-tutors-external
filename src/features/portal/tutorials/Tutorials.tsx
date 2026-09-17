@@ -12,7 +12,6 @@ import {
   fetchUserEnrollment,
 } from "@/services/portal";
 import { DashboardSummary, SubjectAccordionData } from "@/types/portal";
-import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 
 export default function Tutorials() {
   const { user, token, userEnrollment, setUserEnrollment } = useAuthStore();
@@ -26,7 +25,6 @@ export default function Tutorials() {
   const [subjects, setSubjects] = useState<SubjectAccordionData[]>([]);
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -172,14 +170,9 @@ export default function Tutorials() {
               text="Click here to subscribe"
               variant="primary"
               className="px-8"
-              onClick={() => setShowSubscriptionModal(true)}
             />
           </div>
         </section>
-        <SubscriptionModal
-          isOpen={showSubscriptionModal}
-          onClose={() => setShowSubscriptionModal(false)}
-        />
       </PortalWrapper>
     );
   }

@@ -7,9 +7,9 @@ type UserAuthWrapperProps = {
 
 export const UserAuthWrapper = ({ children }: UserAuthWrapperProps) => {
   return (
-    <main className="min-h-screen w-screen flex">
+    <main className="min-h-screen w-screen flex overflow-x-auto">
       {/* LEFT SECTION */}
-      <section className="w-full max-w-150 bg-[url('/body-pix/auth-bg.png')] bg-cover bg-center bg-no-repeat p-10 flex flex-col justify-between items-start animate-fade-left">
+      <section className="w-full max-w-150 bg-[url('/body-pix/auth-bg.png')] bg-cover bg-center bg-no-repeat p-10 flex flex-col justify-between items-start animate-fade-left flex-shrink-0">
         {/* logo */}
         <div className="w-20">
           <Image
@@ -37,8 +37,8 @@ export const UserAuthWrapper = ({ children }: UserAuthWrapperProps) => {
           </p>
         </div>
       </section>
-      <section className="w-full max-w-[calc(100%-600px)] flex justify-center items-center">
-        <div className="w-125">{children}</div>
+      <section className="w-full max-w-[calc(100%-600px)] flex justify-center items-center min-w-[400px]">
+        <div className="w-125 p-4">{children}</div>
       </section>
     </main>
   );

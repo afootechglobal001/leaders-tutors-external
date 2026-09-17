@@ -17,19 +17,19 @@ export interface PaymentInitiation {
   currency: string;
 }
 
-interface RawPaymentInitiation {
+interface PaymentApiResponse {
   transactionId?: string;
   id?: string;
   paymentUrl?: string;
   authorization_url?: string;
-  amount?: number | string;
+  amount?: number;
   currency?: string;
 }
 
 interface RawWalletTransaction {
   transactionId?: string;
   id?: string;
-  amount?: number | string;
+  amount?: string | number;
   currency?: string;
   statusId?: number | string;
   transactionType?: string;
@@ -39,25 +39,12 @@ interface RawWalletTransaction {
   description?: string;
 }
 
-const toNumber = (value: number | string | undefined, fallback = 0): number => {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-
-  return fallback;
-};
-
 // Load wallet - initiate payment
 export const initiateWalletLoad = async (
   amount: number,
 ): Promise<PaymentInitiation> => {
   try {
-    const data = await apiClient.post<RawPaymentInitiation>(
+    const data = await apiClient.post<PaymentApiResponse>(
       "/user/payment/load-wallet-log",
       {
         amount: amount.toString(),
@@ -67,8 +54,8 @@ export const initiateWalletLoad = async (
     return {
       transactionId: data.transactionId || data.id || "",
       paymentUrl: data.paymentUrl || data.authorization_url || "",
-      amount: toNumber(data.amount, amount),
-      currency: data.currency || "â‚¦",
+      amount: data.amount || amount,
+      currency: data.currency || "₦",
     };
   } catch (error) {
     console.error("Wallet load initiation failed:", error);
@@ -119,14 +106,16 @@ export const fetchUserTransactions = async (): Promise<WalletTransaction[]> => {
 
     return data.map((transaction) => ({
       id: transaction.transactionId || transaction.id || "",
-      amount: toNumber(transaction.amount),
-      currency: transaction.currency || "â‚¦",
-      status: mapTransactionStatus(transaction.statusId),
-      type: mapTransactionType(transaction.transactionType || transaction.type),
+      amount: parseFloat(String(transaction.amount ?? "0")),
+      currency: transaction.currency || "₦",
+      status: mapTransactionStatus(transaction.statusId ?? ""),
+      type: mapTransactionType(
+        transaction.transactionType || transaction.type || "",
+      ),
       createdAt: transaction.createdAt || transaction.created_at || "",
       description:
         transaction.description ||
-        `${transaction.type || "Transaction"} - ${transaction.amount || 0}`,
+        `${transaction.type || "Transaction"} - ${transaction.amount}`,
     }));
   } catch (error) {
     console.error("Transactions fetch failed:", error);
@@ -136,7 +125,7 @@ export const fetchUserTransactions = async (): Promise<WalletTransaction[]> => {
 
 // Helper function to map status IDs to readable status
 function mapTransactionStatus(
-  statusId: number | string | undefined,
+  statusId: number | string,
 ): "pending" | "success" | "failed" | "cancelled" {
   switch (statusId?.toString()) {
     case "3":
@@ -152,7 +141,7 @@ function mapTransactionStatus(
 
 // Helper function to map transaction types
 function mapTransactionType(
-  type: string | undefined,
+  type: string,
 ): "load_wallet" | "exam_payment" | "ebook_payment" | "subscription" {
   if (type?.toLowerCase().includes("wallet")) return "load_wallet";
   if (type?.toLowerCase().includes("exam")) return "exam_payment";
@@ -166,7 +155,7 @@ export const initiateExamPayment = async (
   examRegistrationId: string,
 ): Promise<PaymentInitiation> => {
   try {
-    const data = await apiClient.post<RawPaymentInitiation>(
+    const data = await apiClient.post<PaymentApiResponse>(
       "/user/exam/initiate-exam-payment",
       {
         examRegistrationId,
@@ -176,8 +165,8 @@ export const initiateExamPayment = async (
     return {
       transactionId: data.transactionId || data.id || "",
       paymentUrl: data.paymentUrl || data.authorization_url || "",
-      amount: toNumber(data.amount),
-      currency: data.currency || "â‚¦",
+      amount: data.amount || 0,
+      currency: data.currency || "₦",
     };
   } catch (error) {
     console.error("Exam payment initiation failed:", error);
