@@ -38,7 +38,7 @@ export function CompleteRegistration() {
 
   const selectedPaymentMethod = watch("paymentMethod");
   const paymentAmount = pendingData?.paymentProceedData?.amount
-    ? parseFloat(pendingData.paymentProceedData.amount)
+    ? parseFloat(String(pendingData.paymentProceedData.amount))
     : 1000;
 
   useEffect(() => {
@@ -88,15 +88,6 @@ export function CompleteRegistration() {
       return;
     }
 
-    if (!pendingData?.paymentProceedData) {
-      showToast({
-        variant: "error",
-        title: "Payment Data Missing",
-        message: "Please go back and sign up again.",
-      });
-      return;
-    }
-
     setShowPaymentModal(true);
   };
 
@@ -107,9 +98,12 @@ export function CompleteRegistration() {
 
       console.log("Payment reference from Paystack:", reference);
 
-      // IMPORTANT: Use the transactionId from the signup response, NOT the Paystack reference
-      const transactionId = pendingData?.paymentProceedData?.transactionId;
-      const paymentKey = pendingData?.paymentProceedData?.paystackPaymentKey;
+      const transactionId =
+        pendingData?.paymentProceedData?.transactionId || reference;
+      const paymentKey =
+        pendingData?.paymentProceedData?.paystackPaymentKey ||
+        process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
+        "";
 
       if (!transactionId || !paymentKey) {
         console.error("Missing transaction data:", {
@@ -316,19 +310,20 @@ export function CompleteRegistration() {
         </div>
       </section>
 
-      {pendingData && pendingData.paymentProceedData && (
+      {pendingData && (
         <PaystackModal
           isOpen={showPaymentModal}
           onClose={handlePaymentClose}
           email={pendingData.emailAddress}
           amount={paymentAmount}
-          publicKey={pendingData.paymentProceedData.paystackPaymentKey}
+          publicKey={pendingData.paymentProceedData?.paystackPaymentKey}
           metadata={{
             userId: pendingData.userId,
             fullName: pendingData.signupPayload?.fullName,
             referralCode: referralCode || undefined,
             paymentMethod: selectedPaymentMethod,
-            transactionId: pendingData.paymentProceedData.transactionId,
+            transactionId: pendingData.paymentProceedData?.transactionId,
+            paymentMethodId: selectedPaymentMethod,
           }}
           onSuccess={handlePaymentSuccess}
           title="Complete Registration Payment"

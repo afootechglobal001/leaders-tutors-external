@@ -33,16 +33,15 @@ export interface PendingSignupVerification {
   emailAddress: string;
   signupPayload: SignupPayload;
   paymentProceedData?: {
-    fullName: string;
-    emailAddress: string;
-    phoneNumber: string;
-    subscriptionId: string;
-    transactionId: string;
-    paymentMethodId: string;
-    currency: string;
-    amount: string;
-    email: string;
-    paystackPaymentKey: string;
+    fullName?: string;
+    emailAddress?: string;
+    phoneNumber?: string;
+    transactionId?: string;
+    paymentMethodId?: string;
+    currency?: string;
+    amount?: string | number;
+    email?: string;
+    paystackPaymentKey?: string;
   };
 }
 
@@ -83,8 +82,8 @@ export const fetchSubjects = async (
 ): Promise<DropdownOption[]> => {
   const data = await apiClient.get<unknown[]>(
     departmentId
-      ? `/preset-data/fetch-subjects?departmentId=${departmentId}`
-      : "/preset-data/fetch-subjects",
+      ? `/preset-data/fetch-external-subjects?departmentId=${departmentId}`
+      : "/preset-data/fetch-external-subjects",
   );
 
   const finalData = Array.isArray(data)
@@ -161,16 +160,18 @@ const getNameParts = (fullName: string) => {
   };
 };
 
-export const mapSignupPayload = (formData: {
-  fullName: string;
-  emailAddress: string;
-  phoneNumber: string;
-  department: string;
-  exam: string;
-  password: string;
-  confirmPassword: string;
-  paymentMethodId?: string;
-}): SignupPayload => {
+export const mapSignupPayload = (
+  formData: {
+    fullName: string;
+    emailAddress: string;
+    phoneNumber: string;
+    department: string;
+    exam: string;
+    password: string;
+    confirmPassword: string;
+  },
+  extras: { paymentMethodId: string },
+): SignupPayload => {
   return {
     fullName: formData.fullName.trim(),
     emailAddress: formData.emailAddress,
@@ -179,12 +180,27 @@ export const mapSignupPayload = (formData: {
     examId: formData.exam.trim(),
     password: formData.password,
     confirmPassword: formData.confirmPassword,
-    paymentMethodId: formData.paymentMethodId || "CC",
+    paymentMethodId: extras.paymentMethodId,
   };
 };
 
-export const signupUser = async (payload: SignupPayload) =>
-  apiClient.post<AuthApiResponse, SignupPayload>("/user/auth/signup", payload);
+export const signupUser = async (payload: SignupPayload) => {
+  const body = {
+    fullName: payload.fullName,
+    emailAddress: payload.emailAddress,
+    phoneNumber: payload.phoneNumber,
+    departmentId: payload.departmentId,
+    examId: payload.examId,
+    password: payload.password,
+    confirmPassword: payload.confirmPassword,
+    paymentMethodId: payload.paymentMethodId,
+  };
+
+  return apiClient.post<AuthApiResponse, typeof body>(
+    "/user/auth/signup",
+    body,
+  );
+};
 
 export const loginUser = async (payload: LoginPayload) =>
   apiClient.post<AuthApiResponse, LoginPayload>("/user/auth/login", payload);
@@ -217,9 +233,12 @@ export const getSignupVerificationData = (
         : null);
   }
 
-  // Extract payment proceed data if available
-  const paymentProceedData = (response as Record<string, unknown>)
-    ?.paymentProceedData as PendingSignupVerification["paymentProceedData"];
+  const responseData = response as Record<string, unknown>;
+  const nestedData = responseData?.data as Record<string, unknown> | undefined;
+  const paymentProceedData = (responseData?.paymentProceedData ||
+    nestedData?.paymentProceedData) as
+    | PendingSignupVerification["paymentProceedData"]
+    | undefined;
 
   console.log("Full signup response:", JSON.stringify(response, null, 2));
   console.log("Payment proceed data:", paymentProceedData);
@@ -296,9 +315,9 @@ export const normalizeAuthResponse = (
   console.log("normalizeAuthResponse - Source data:", sourceData);
 
   const token = getStringValue(sourceData as AuthApiResponse, [
+    "accessKey",
     "accessToken",
     "token",
-    "accessKey",
   ]);
 
   console.log("normalizeAuthResponse - Extracted token:", token);
@@ -364,50 +383,13 @@ export const normalizeAuthResponse = (
 };
 
 /**
- * Verify signup payment with Paystack reference
- */
-export const verifySignupPayment = async (
-  reference: string,
-  userId: string,
-): Promise<boolean> => {
-  try {
-    await apiClient.post("/user/auth/verify-signup-payment", {
-      reference,
-      userId,
-    });
-    return true;
-  } catch (error) {
-    console.error("Payment verification failed:", error);
-    return false;
-  }
-};
-
-/**
  * Complete signup after successful payment
  */
 export const completeSignupSuccess = async (
   transactionId: string,
   paymentKey: string,
 ): Promise<AuthApiResponse> => {
-  const response = await apiClient.get<AuthApiResponse>(
+  return apiClient.post<AuthApiResponse>(
     `/user/auth/signup-success?transactionId=${transactionId}&paymentKey=${paymentKey}`,
   );
-  return response;
-};
-
-/**
- * Get signup payment amount (if dynamic pricing is needed)
- */
-export const getSignupPaymentAmount = async (
-  examId: string,
-): Promise<number> => {
-  try {
-    const data = await apiClient.get<{ amount: number }>(
-      `/preset-data/signup-fee?examId=${examId}`,
-    );
-    return data.amount || 5000; // Default to 5000 NGN
-  } catch (error) {
-    console.error("Failed to fetch signup amount:", error);
-    return 5000; // Default fallback
-  }
 };

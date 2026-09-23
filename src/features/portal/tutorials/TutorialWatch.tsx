@@ -6,74 +6,52 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/form";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { checkPaymentStatus } from "@/services/portal";
-
-interface VideoData {
-  id: string;
-  title: string;
-  subject: string;
-  topic: string;
-  duration: string;
-  videoUrl: string;
-  description: string;
-  year: string;
-  exam: string;
-}
+import { fetchTutorialById, fetchUserSubscription } from "@/services/portal";
+import { TutorialVideo } from "@/types/portal";
+import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 
 export default function TutorialWatch() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
-  const subjectId = searchParams.get("subject");
-  const topicId = searchParams.get("topic");
+  const tutorialId = searchParams.get("tutorialId");
 
-  const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [videoData, setVideoData] = useState<TutorialVideo | null>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   useEffect(() => {
     const loadVideoData = async () => {
       try {
         setIsLoading(true);
 
-        // Check payment status
-        const paymentStatus = await checkPaymentStatus().catch(() => ({
-          isSubscriptionActive: false,
-          subscriptionExpiresAt: new Date().toISOString(),
-          subscriptionType: "basic",
-          walletBalance: 0,
-          currency: "₦",
-        }));
+        const subscription = await fetchUserSubscription().catch(() => null);
+        const isActive = !!subscription?.isSubscriptionActive;
+        setHasActiveSubscription(isActive);
 
-        setHasActiveSubscription(paymentStatus.isSubscriptionActive);
-
-        // Try to fetch actual video data from API
-        if (topicId && subjectId) {
-          try {
-            // This would be implemented when video endpoints are available
-            // For now, we don't have video endpoints in the Postman collection
-            console.warn("Video endpoints not available in API");
-            setVideoData(null);
-          } catch (error) {
-            console.error("Failed to fetch video data:", error);
-            setVideoData(null);
-          }
+        if (!isActive || !tutorialId) {
+          setVideoData(null);
+          return;
         }
+
+        const tutorial = await fetchTutorialById(tutorialId);
+        setVideoData(tutorial);
       } catch (error) {
         console.error("Video data load error:", error);
+        setVideoData(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadVideoData();
-  }, [topicId, subjectId]);
+  }, [tutorialId]);
 
   const userName = user
     ? `${user.first_name} ${user.last_name}`
     : "Student User";
 
-  // Show subscription warning if not active
-  if (!hasActiveSubscription) {
+  if (!hasActiveSubscription && !isLoading) {
     return (
       <PortalWrapper>
         <section className="px-6 py-20">
@@ -87,8 +65,16 @@ export default function TutorialWatch() {
             <p className="text-gray-600 mb-6">
               You need an active subscription to watch tutorial videos.
             </p>
-            <Button text="Upgrade Subscription" className="px-8" />
+            <Button
+              text="Upgrade Subscription"
+              className="px-8"
+              onClick={() => setShowSubscriptionModal(true)}
+            />
           </div>
+          <SubscriptionModal
+            isOpen={showSubscriptionModal}
+            onClose={() => setShowSubscriptionModal(false)}
+          />
         </section>
       </PortalWrapper>
     );
@@ -136,7 +122,6 @@ export default function TutorialWatch() {
 
   return (
     <PortalWrapper>
-      {/* Header with Back Button */}
       <section className="px-6 py-4 bg-white border-b border-gray-100">
         <div className="flex items-center gap-4">
           <Link href="/tutorials">
@@ -154,24 +139,31 @@ export default function TutorialWatch() {
               {videoData.title}
             </h1>
             <p className="text-sm text-gray-500">
-              {videoData.subject} • {videoData.topic}
+              {videoData.subject} • {videoData.year} {videoData.exam}
             </p>
           </div>
         </div>
       </section>
 
-      {/* Video Player Section */}
       <section className="px-6 py-6">
         <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-          {/* Video Player */}
           <div className="relative bg-black aspect-video">
-            <video className="w-full h-full" controls>
-              <source src={videoData.videoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            {videoData.videoUrl ? (
+              <video
+                className="w-full h-full"
+                controls
+                poster={videoData.thumbnailUrl}
+              >
+                <source src={videoData.videoUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white">
+                Video URL is not available for this tutorial.
+              </div>
+            )}
           </div>
 
-          {/* Video Info */}
           <div className="p-6">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
@@ -179,13 +171,15 @@ export default function TutorialWatch() {
                   {videoData.title}
                 </h2>
                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{videoData.duration}</span>
-                  </div>
+                  {videoData.duration ? (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{videoData.duration}</span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-1">
                     <BookOpen className="w-4 h-4" />
-                    <span>{videoData.subject}</span>
+                    <span>{videoData.subject || "Tutorial"}</span>
                   </div>
                   <span>•</span>
                   <span>
@@ -203,35 +197,32 @@ export default function TutorialWatch() {
               </div>
             </div>
 
-            {/* Description */}
-            <div className="border-t border-gray-100 pt-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                About this tutorial
-              </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {videoData.description}
-              </p>
-            </div>
+            {videoData.description ? (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  About this tutorial
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {videoData.description}
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
-      {/* Related Videos or Navigation */}
       <section className="px-6 pb-6">
         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">
             Continue Learning
           </h3>
-          <div className="flex gap-4">
-            <Link href="/tutorials">
-              <Button
-                text="Back to All Tutorials"
-                variant="secondary"
-                className="px-6"
-              />
-            </Link>
-            <Button text="Next Video" className="px-6" disabled />
-          </div>
+          <Link href="/tutorials">
+            <Button
+              text="Back to All Tutorials"
+              variant="secondary"
+              className="px-6"
+            />
+          </Link>
         </div>
       </section>
     </PortalWrapper>

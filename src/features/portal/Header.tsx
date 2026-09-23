@@ -6,7 +6,7 @@ import { getInitials } from "@/utils/helpers";
 import { useRouter } from "next/navigation";
 import { NAV_LINKS } from "@/constants/portal/navlinks";
 export const Header = () => {
-  const { clearAuth } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -14,6 +14,11 @@ export const Header = () => {
     clearAuth();
     router.push("/");
   };
+
+  const userName = user
+    ? `${user.first_name} ${user.last_name}`.trim()
+    : "Student User";
+
   const [activeLink, setActiveLink] = useState("Dashboard");
   return (
     <header className="bg-white w-full h-[60px] flex justify-between items-center">
@@ -56,10 +61,10 @@ export const Header = () => {
             onClick={() => setOpen(!open)}
           >
             <div className="text-white font-medium-custom w-[40px] h-[40px] text-xs bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
-              {getInitials(`Mike Afolabi`)}
+              {getInitials(userName)}
             </div>
             <span className="text-md text-black font-medium-custom">
-              Mike Afolabi
+              {userName}
             </span>
             <ChevronDown size={16} className="text-black" />
           </div>

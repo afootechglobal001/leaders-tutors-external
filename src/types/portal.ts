@@ -19,7 +19,7 @@ export interface TutorialVideo {
   description?: string;
 }
 
-export interface SubjectAccordionData {
+export interface TutorialSubject {
   id: string;
   name: string;
   department: string;
@@ -27,13 +27,33 @@ export interface SubjectAccordionData {
   exam: string;
   examId: string;
   examAbbr?: string;
-  items: {
-    id: string;
-    title: string;
-    year: string | number;
-    videoCount?: number;
-    description?: string;
-  }[];
+}
+
+export type SubjectAccordionData = TutorialSubject;
+
+export interface ClassVideo {
+  id: string;
+  title: string;
+  year: string;
+  yearId?: string;
+  duration?: string;
+  subjectId: string;
+  description?: string;
+  thumbnailUrl?: string;
+}
+
+export interface UserSubscription {
+  isSubscriptionActive: boolean;
+  subscriptionExpiresAt: string;
+  subscriptionType: string;
+  walletBalance: number;
+  currency: string;
+  departmentId: string;
+  departmentName: string;
+  examId: string;
+  examAbbreviation: string;
+  lastPaymentDate?: string;
+  nextBillingDate?: string;
 }
 
 export interface PaymentStatus {
@@ -44,23 +64,6 @@ export interface PaymentStatus {
   currency: string;
   lastPaymentDate?: string;
   nextBillingDate?: string;
-}
-
-export interface TutorialSubject {
-  id: string;
-  name: string;
-  examAbbr: string;
-  department: string;
-  videoCount: number;
-  topics: TutorialTopic[];
-}
-
-export interface TutorialTopic {
-  id: string;
-  title: string;
-  year: string;
-  videoCount: number;
-  videos: TutorialVideo[];
 }
 
 export interface UserEnrollment {

@@ -9,7 +9,7 @@ import Link from "next/link";
 import { SignupSchema, SignupSchemaType } from "@/types/auth/schema";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { handleAppError } from "@/lib/axios";
 import { showToast } from "@/components/toast";
 import {
@@ -17,23 +17,55 @@ import {
   signupUser,
   fetchDepartments,
   fetchExams,
+  fetchPaymentMethods,
   getSignupVerificationData,
   savePendingSignupVerification,
+  completeSignupSuccess,
+  normalizeAuthResponse,
+  loginUser,
+  type PendingSignupVerification,
 } from "@/services/auth";
+import SignupInstructionModal from "@/components/onboarding/SignupInstructionModal";
+import {
+  convertToKobo,
+  initializePaystackPayment,
+  loadPaystackScript,
+} from "@/services/paystack";
+import { useAuthStore } from "@/store/authStore";
+
+const DEFAULT_SIGNUP_AMOUNT = 1000;
+
+const parseSignupAmount = (pending: PendingSignupVerification | null) => {
+  const rawAmount = pending?.paymentProceedData?.amount;
+  const parsed = rawAmount !== undefined ? Number(rawAmount) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SIGNUP_AMOUNT;
+};
 
 export default function SignUp() {
   const router = useRouter();
-  const [isPending, setIsPending] = useState(false);
+  const { setAuth } = useAuthStore();
+  const [isPaying, setIsPaying] = useState(false);
+  const [showInstructionModal, setShowInstructionModal] = useState(false);
+  const [paymentMethodId, setPaymentMethodId] = useState("");
+  const [paymentMethodError, setPaymentMethodError] = useState("");
+  const [pendingSignup, setPendingSignup] =
+    useState<PendingSignupVerification | null>(null);
+  const formDataRef = useRef<SignupSchemaType | null>(null);
 
   const [departments, setDepartments] = useState<
     { value: string; label: string }[]
   >([]);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<
+    { value: string; label: string }[]
+  >([]);
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
+    getValues,
     formState: { errors },
   } = useForm<SignupSchemaType>({
     defaultValues: {
@@ -52,13 +84,15 @@ export default function SignUp() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [deptOptions, examOptions] = await Promise.all([
+        const [deptOptions, examOptions, paymentOptions] = await Promise.all([
           fetchDepartments(),
           fetchExams(),
+          fetchPaymentMethods(),
         ]);
 
         setDepartments(deptOptions);
         setExams(examOptions);
+        setPaymentMethods(paymentOptions);
       } catch (error) {
         console.error(error);
         showToast({
@@ -72,36 +106,149 @@ export default function SignUp() {
     fetchData();
   }, []);
 
-  const handleSignup = async (data: SignupSchemaType) => {
+  const selectedDepartmentId = watch("department");
+  const selectedExamId = watch("exam");
+  const selectedDepartment =
+    departments.find((item) => item.value === selectedDepartmentId)?.label ||
+    "";
+  const selectedExam =
+    exams.find((item) => item.value === selectedExamId)?.label || "";
+  const paymentAmount = useMemo(
+    () => parseSignupAmount(pendingSignup),
+    [pendingSignup],
+  );
+  const pendingSignupRef = useRef<PendingSignupVerification | null>(null);
+
+  const completePaidSignup = async (reference: string) => {
+    const pending = pendingSignupRef.current;
     try {
-      setIsPending(true);
+      setIsPaying(true);
+      const transactionId =
+        pending?.paymentProceedData?.transactionId || reference;
+      const paymentKey =
+        pending?.paymentProceedData?.paystackPaymentKey ||
+        process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
+        "";
 
-      const response = await signupUser(mapSignupPayload(data));
+      const signupSuccessResponse = await completeSignupSuccess(
+        transactionId,
+        paymentKey,
+      ).catch(() => null);
 
-      console.log("Full signup response:", JSON.stringify(response, null, 2));
+      let token: string | undefined;
+      let user;
 
-      // Use the helper function to extract all data including paymentProceedData
-      const verificationData = getSignupVerificationData(
-        response,
-        mapSignupPayload(data),
-      );
+      if (signupSuccessResponse) {
+        try {
+          const normalized = normalizeAuthResponse(
+            signupSuccessResponse,
+            pending?.emailAddress || "",
+          );
+          token = normalized.token;
+          user = normalized.user;
+        } catch {
+          token = undefined;
+        }
+      }
 
-      console.log("Saving verification data:", verificationData);
-      savePendingSignupVerification(verificationData);
+      if (!token && pending?.signupPayload) {
+        const loginResponse = await loginUser({
+          emailAddress: pending.signupPayload.emailAddress,
+          password: pending.signupPayload.password,
+        });
+        const normalized = normalizeAuthResponse(
+          loginResponse,
+          pending.emailAddress,
+        );
+        token = normalized.token;
+        user = normalized.user;
+      }
 
+      if (!token || !user) {
+        throw new Error("Payment succeeded but we could not sign you in.");
+      }
+
+      setAuth(user, token);
+      setShowInstructionModal(false);
       showToast({
         variant: "success",
-        title: "Account Created",
-        message: "Please proceed to complete your registration.",
+        title: "Payment successful",
+        message: "Your account is ready.",
       });
-
-      // Redirect to complete registration page
-      router.push("/sign-up/complete-registration");
+      router.push("/dashboard");
     } catch (error) {
-      console.error("Signup error:", error);
       handleAppError({ showToast: true, error });
     } finally {
-      setIsPending(false);
+      setIsPaying(false);
+    }
+  };
+
+  const handleSignup = () => {
+    setShowInstructionModal(true);
+  };
+
+  const handlePayNow = async () => {
+    if (!paymentMethodId) {
+      setPaymentMethodError("Please select a payment method to proceed.");
+      return;
+    }
+    setPaymentMethodError("");
+
+    try {
+      setIsPaying(true);
+      const formData = getValues();
+      const payload = mapSignupPayload(formData, { paymentMethodId });
+      const response = await signupUser(payload);
+      const verificationData = getSignupVerificationData(response, payload);
+
+      pendingSignupRef.current = verificationData;
+      savePendingSignupVerification(verificationData);
+      setPendingSignup(verificationData);
+
+      const amount = parseSignupAmount(verificationData);
+      const publicKey =
+        verificationData.paymentProceedData?.paystackPaymentKey ||
+        process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
+        "";
+
+      if (!publicKey) {
+        showToast({
+          variant: "error",
+          title: "Payment unavailable",
+          message: "Paystack is not configured for this environment.",
+        });
+        setIsPaying(false);
+        return;
+      }
+
+      await loadPaystackScript();
+      initializePaystackPayment({
+        publicKey,
+        email: payload.emailAddress,
+        amount: convertToKobo(amount),
+        metadata: {
+          userId: verificationData.userId,
+          fullName: payload.fullName,
+          departmentId: payload.departmentId,
+          examId: payload.examId,
+          paymentMethodId: "CC",
+          transactionId: verificationData.paymentProceedData?.transactionId,
+        },
+        onSuccess: (reference) => {
+          void completePaidSignup(reference);
+        },
+        onClose: () => {
+          setIsPaying(false);
+          showToast({
+            variant: "warning",
+            title: "Payment cancelled",
+            message: "Complete payment to activate your account.",
+          });
+        },
+      });
+    } catch (error) {
+      handleAppError({ showToast: true, error });
+      setIsPaying(false);
     }
   };
 
@@ -132,7 +279,7 @@ export default function SignUp() {
           id="text"
           label="Full Name"
           message={errors.fullName?.message}
-          disabled={isPending}
+          disabled={isPaying}
           {...register("fullName")}
         />
 
@@ -140,7 +287,7 @@ export default function SignUp() {
           id="email"
           label="Email Address"
           message={errors.emailAddress?.message}
-          disabled={isPending}
+          disabled={isPaying}
           {...register("emailAddress")}
         />
 
@@ -148,7 +295,7 @@ export default function SignUp() {
           id="tel"
           label="Mobile Number"
           message={errors.phoneNumber?.message}
-          disabled={isPending}
+          disabled={isPaying}
           {...register("phoneNumber")}
         />
 
@@ -162,7 +309,7 @@ export default function SignUp() {
             control={control}
             message={errors.department?.message}
             options={departments}
-            disabled={isPending}
+            disabled={isPaying}
           />
         </div>
 
@@ -175,7 +322,7 @@ export default function SignUp() {
           control={control}
           message={errors.exam?.message}
           options={exams}
-          disabled={isPending}
+          disabled={isPaying}
         />
 
         <div className="w-full relative">
@@ -184,7 +331,7 @@ export default function SignUp() {
             type="password"
             label="Create Password"
             message={errors.password?.message}
-            disabled={isPending}
+            disabled={isPaying}
             {...register("password")}
           />
         </div>
@@ -195,7 +342,7 @@ export default function SignUp() {
             type="password"
             label="Confirm Password"
             message={errors.confirmPassword?.message}
-            disabled={isPending}
+            disabled={isPaying}
             {...register("confirmPassword")}
           />
         </div>
@@ -204,7 +351,7 @@ export default function SignUp() {
           text="Sign-Up"
           frontIcon={<ArrowRight />}
           fullWidth
-          isLoading={isPending}
+          disabled={isPaying}
           onClick={handleSubmit(handleSignup)}
         />
 
@@ -232,6 +379,23 @@ export default function SignUp() {
           </p>
         </div>
       </section>
+
+      <SignupInstructionModal
+        isOpen={showInstructionModal}
+        onClose={() => setShowInstructionModal(false)}
+        department={selectedDepartment}
+        exam={selectedExam}
+        amount={paymentAmount}
+        isPaying={isPaying}
+        paymentMethodId={paymentMethodId}
+        paymentMethodOptions={paymentMethods}
+        paymentMethodError={paymentMethodError}
+        onPaymentMethodChange={(value) => {
+          setPaymentMethodId(value);
+          setPaymentMethodError("");
+        }}
+        onPayNow={handlePayNow}
+      />
     </UserAuthWrapper>
   );
 }

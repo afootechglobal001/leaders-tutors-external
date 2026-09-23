@@ -1,5 +1,5 @@
 "use client";
-import { ChevronDown, Play, BarChart3 } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
 import { useState, useEffect } from "react";
@@ -8,106 +8,79 @@ import Link from "next/link";
 import {
   fetchDashboardSummary,
   fetchTutorialSubjects,
-  checkPaymentStatus,
-  fetchUserEnrollment,
+  fetchUserSubscription,
 } from "@/services/portal";
-import { DashboardSummary, SubjectAccordionData } from "@/types/portal";
+import { DashboardSummary, TutorialSubject } from "@/types/portal";
 import WalletLoadModal from "@/components/wallet/WalletLoadModal";
+import SubscriptionModal from "@/components/subscription/SubscriptionModal";
+import ClassVideosModal from "@/components/tutorial/ClassVideosModal";
+import SubjectList from "@/features/portal/tutorials/SubjectList";
 
 export default function Dashboard() {
-  const { user, token, userEnrollment, setUserEnrollment } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [summary, setSummary] = useState<DashboardSummary>({
-    subscriptionExpiresIn: 30,
+    subscriptionExpiresIn: 0,
     walletBalance: 0,
     currency: "₦",
-    subscriptionStatus: "active",
+    subscriptionStatus: "expired",
     subscriptionType: "basic",
   });
-  const [subjects, setSubjects] = useState<SubjectAccordionData[]>([]);
-  const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<TutorialSubject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedSubject, setSelectedSubject] =
+    useState<TutorialSubject | null>(null);
 
   useEffect(() => {
-    // Check authentication status
     setIsAuthenticated(!!token && !!user);
 
     const loadData = async () => {
       try {
         setIsLoading(true);
 
-        // If not authenticated, don't try to load data
         if (!token || !user) {
           setIsLoading(false);
           return;
         }
 
-        // Fetch user enrollment if not already available
-        let enrollment = userEnrollment;
-        if (!enrollment) {
-          try {
-            enrollment = await fetchUserEnrollment();
-            if (enrollment) {
-              setUserEnrollment(enrollment);
-            }
-          } catch (enrollmentError) {
-            console.error("Failed to fetch user enrollment:", enrollmentError);
-            // Continue without enrollment data
-          }
+        const subscription = await fetchUserSubscription().catch(() => null);
+        const isActive = !!subscription?.isSubscriptionActive;
+        setHasActiveSubscription(isActive);
+
+        if (!subscription || !isActive) {
+          setSubjects([]);
+          setSummary({
+            subscriptionExpiresIn: 0,
+            walletBalance: subscription?.walletBalance || 0,
+            currency: subscription?.currency || "₦",
+            subscriptionStatus: "expired",
+            subscriptionType: subscription?.subscriptionType || "basic",
+          });
+          return;
         }
 
-        // Check payment status
-        try {
-          const paymentStatus = await checkPaymentStatus();
-          setHasActiveSubscription(paymentStatus.isSubscriptionActive);
-        } catch (paymentError) {
-          console.error("Failed to check payment status:", paymentError);
-          setHasActiveSubscription(false); // Default to inactive if check fails
-        }
-
-        // Fetch dashboard data
-        const dataPromises = [];
-
-        // Add dashboard summary promise
-        dataPromises.push(
-          fetchDashboardSummary().catch((error) => {
-            console.error("Dashboard summary fetch failed:", error);
-            return {
-              subscriptionExpiresIn: 0,
-              walletBalance: 0,
-              currency: "₦",
-              subscriptionStatus: "expired" as const,
-              subscriptionType: "basic",
-            };
-          }),
-        );
-
-        // Add tutorial subjects promise if we have enrollment
-        if (enrollment) {
-          dataPromises.push(
-            fetchTutorialSubjects(enrollment).catch((error) => {
-              console.error("Tutorial subjects fetch failed:", error);
-              return [];
-            }),
-          );
-        } else {
-          dataPromises.push(Promise.resolve([]));
-        }
-
-        const [sum, subs] = (await Promise.all(dataPromises)) as [
-          DashboardSummary,
-          SubjectAccordionData[],
-        ];
+        const [sum, subs] = await Promise.all([
+          fetchDashboardSummary().catch(() => ({
+            subscriptionExpiresIn: 0,
+            walletBalance: subscription.walletBalance,
+            currency: subscription.currency,
+            subscriptionStatus: "expired" as const,
+            subscriptionType: subscription.subscriptionType,
+          })),
+          fetchTutorialSubjects({
+            departmentId: subscription.departmentId,
+            departmentName: subscription.departmentName,
+            examId: subscription.examId,
+            examAbbreviation: subscription.examAbbreviation,
+            status: "active",
+          }).catch(() => []),
+        ]);
 
         setSummary(sum);
         setSubjects(subs);
-
-        // Auto-expand first subject if available
-        if (subs.length > 0) {
-          setExpandedSubjects([subs[0].id]);
-        }
       } catch (error) {
         console.error("Dashboard data load error:", error);
       } finally {
@@ -115,18 +88,9 @@ export default function Dashboard() {
       }
     };
     loadData();
-  }, [token, user, userEnrollment, setUserEnrollment]);
-
-  const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) =>
-      prev.includes(subjectId)
-        ? prev.filter((id) => id !== subjectId)
-        : [...prev, subjectId],
-    );
-  };
+  }, [token, user]);
 
   const handleWalletLoadSuccess = () => {
-    // Refresh dashboard data after successful wallet load
     fetchDashboardSummary().then(setSummary).catch(console.error);
   };
 
@@ -134,8 +98,8 @@ export default function Dashboard() {
     ? `${user.first_name} ${user.last_name}`
     : "Student User";
   const userRole = user?.role || "STUDENT";
+  const visibleSubjects = subjects.slice(0, 5);
 
-  // Show login prompt if not authenticated
   if (!isAuthenticated) {
     return (
       <PortalWrapper>
@@ -161,11 +125,57 @@ export default function Dashboard() {
     );
   }
 
-  // Show subscription warning if authenticated but no active subscription
-  if (isAuthenticated && !hasActiveSubscription) {
+  if (isAuthenticated && !isLoading && !hasActiveSubscription) {
     return (
       <PortalWrapper>
-        <section className="px-6 py-20">
+        {/* User info bar — same as active subscription view */}
+        <section className="px-6 pt-4">
+          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center text-white text-xs font-semibold font-medium-custom">
+                {userName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--title-color)] capitalize font-medium-custom">
+                  {userName.toLowerCase()}
+                </h2>
+                <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-tighter">
+                  {userRole}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
+                  Remaining Days
+                </p>
+                <p className="text-sm font-bold text-[var(--failed-color)] font-medium-custom">
+                  0 Day(s)
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
+                  Wallet Balance
+                </p>
+                <p className="text-sm font-bold text-[var(--text-green)] font-medium-custom">
+                  {summary.currency}
+                  {summary.walletBalance.toLocaleString()}
+                </p>
+              </div>
+              <Button
+                text="Load Wallet"
+                size="sm"
+                onClick={() => setShowWalletModal(true)}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="px-6 py-6">
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <div className="mb-6">
               <p className="text-[var(--secondary-color)] text-lg font-bold font-bold-custom uppercase tracking-wide">
@@ -176,16 +186,26 @@ export default function Dashboard() {
               text="Click here to subscribe"
               variant="primary"
               className="px-8"
+              onClick={() => setShowSubscriptionModal(true)}
             />
           </div>
+          <SubscriptionModal
+            isOpen={showSubscriptionModal}
+            onClose={() => setShowSubscriptionModal(false)}
+          />
         </section>
+
+        <WalletLoadModal
+          isOpen={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
+          onSuccess={handleWalletLoadSuccess}
+        />
       </PortalWrapper>
     );
   }
 
   return (
     <PortalWrapper>
-      {/* Header Section */}
       <section className="px-6 py-6 bg-white border-b border-[var(--border-color)]">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-[var(--secondary-color-light)] rounded-xl text-[var(--secondary-color)] shadow-sm">
@@ -199,7 +219,6 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Stats Summary Bar */}
       <section className="px-6 pt-4">
         <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
           <div className="flex items-center gap-3">
@@ -248,7 +267,6 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Main Content Area */}
       <section className="px-6 py-6 font-regular-custom">
         <div className="bg-white rounded-xl shadow-md border border-[var(--border-color)] overflow-hidden">
           <div className="px-6 py-4 bg-[var(--gray-color)] flex items-center justify-between border-b border-[var(--border-color)]">
@@ -264,109 +282,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="divide-y divide-[var(--border-color-light)]">
-            {isLoading ? (
-              <div className="p-20 text-center flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--secondary-color)]"></div>
-                <span className="text-sm text-[var(--text-color)] font-medium-custom">
-                  Loading tutorial videos...
-                </span>
-              </div>
-            ) : subjects.length > 0 ? (
-              subjects.slice(0, 5).map((subject) => {
-                const isExpanded = expandedSubjects.includes(subject.id);
-                return (
-                  <div key={subject.id} className="group">
-                    {/* Subject Header */}
-                    <button
-                      onClick={() => toggleSubject(subject.id)}
-                      className={`w-full flex items-center justify-between px-6 py-5 hover:bg-[var(--gray-color)] transition-all text-left ${isExpanded ? "bg-[var(--gray-color)]" : ""}`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`p-2 rounded-lg transition-colors ${isExpanded ? "bg-[var(--failed-color)] text-white" : "bg-red-50 text-[var(--failed-color)]"}`}
-                        >
-                          <Play className="w-5 h-5" />
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <h3
-                            className={`text-base font-bold transition-colors uppercase font-bold-custom ${isExpanded ? "text-[var(--title-color)]" : "text-[var(--text-color)]"}`}
-                          >
-                            {subject.name}
-                          </h3>
-                          <span className="text-xs text-[var(--text-secondary-color)] uppercase tracking-wide">
-                            {subject.department} /{" "}
-                            {subject.examAbbr || subject.exam}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="px-2 py-1 bg-[var(--border-color-light)] text-[var(--text-secondary-color)] text-[10px] font-bold rounded uppercase font-medium-custom">
-                          {subject.items.length} Topic
-                          {subject.items.length !== 1 ? "s" : ""}
-                        </span>
-                        <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${isExpanded ? "bg-[var(--primary-color)] text-white rotate-0" : "bg-[var(--border-color-light)] text-[var(--text-secondary-color)] -rotate-90"}`}
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </button>
+          <SubjectList
+            subjects={visibleSubjects}
+            isLoading={isLoading}
+            onViewClasses={setSelectedSubject}
+          />
 
-                    {/* Expanded Content */}
-                    {isExpanded && (
-                      <div className="px-6 pb-6 bg-[var(--gray-color)]">
-                        <div className="mb-3 text-xs text-[var(--primary-color)] font-semibold uppercase tracking-wider font-medium-custom">
-                          @ {subject.department} /{" "}
-                          {subject.examAbbr || subject.exam}
-                        </div>
-                        <div className="space-y-2">
-                          {subject.items.map((item) => (
-                            <Link
-                              key={item.id}
-                              href={`/tutorials/watch?subject=${subject.id}&topic=${item.id}`}
-                              className="flex items-center justify-between p-4 bg-white rounded-xl border border-[var(--border-color)] hover:border-[var(--primary-color)] hover:shadow-sm transition-all group/item"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-[var(--failed-color)]"></div>
-                                <span className="text-sm font-semibold text-[var(--text-color)] group-hover/item:text-[var(--primary-color)] uppercase tracking-tight font-medium-custom">
-                                  {subject.name} ({item.year}{" "}
-                                  {subject.examAbbr || subject.exam})
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold text-[var(--text-secondary-color)] font-medium-custom">
-                                  {item.videoCount || 0} Videos
-                                </span>
-                                <div className="bg-[var(--gray-color)] p-1.5 rounded-lg group-hover/item:bg-[var(--primary-color-light)] transition-colors">
-                                  <ChevronDown className="w-4 h-4 -rotate-90 text-[var(--text-secondary-color)] group-hover/item:text-[var(--primary-color)]" />
-                                </div>
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-20 text-center flex flex-col items-center gap-2">
-                <div className="p-4 bg-[var(--border-color-light)] rounded-full text-[var(--text-secondary-color)] mb-2">
-                  <Play className="w-12 h-12" />
-                </div>
-                <h3 className="text-lg font-bold text-[var(--text-secondary-color)] font-bold-custom">
-                  No tutorials found
-                </h3>
-                <p className="text-sm text-[var(--text-color)] max-w-xs">
-                  We couldn&apos;t find any video tutorials for your current
-                  enrollment.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Footer with View All Button */}
           <div className="px-6 py-4 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--gray-color)] rounded-b-xl">
             <div className="text-xs font-medium text-[var(--text-secondary-color)] font-medium-custom">
               Showing {Math.min(5, subjects.length)} of {subjects.length}{" "}
@@ -379,11 +300,15 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Wallet Load Modal */}
       <WalletLoadModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}
         onSuccess={handleWalletLoadSuccess}
+      />
+      <ClassVideosModal
+        isOpen={!!selectedSubject}
+        subject={selectedSubject}
+        onClose={() => setSelectedSubject(null)}
       />
     </PortalWrapper>
   );

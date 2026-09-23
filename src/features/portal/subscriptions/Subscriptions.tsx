@@ -7,9 +7,12 @@ import { PortalWrapper } from "../PortalWrapper";
 import { Button } from "@/components/form";
 import WalletLoadModal from "@/components/wallet/WalletLoadModal";
 import { useAuthStore } from "@/store/authStore";
-import { fetchDashboardSummary, fetchUserEnrollment } from "@/services/portal";
+import {
+  fetchDashboardSummary,
+  fetchUserSubscription,
+} from "@/services/portal";
 import { fetchUserTransactions, WalletTransaction } from "@/services/payment";
-import { DashboardSummary } from "@/types/portal";
+import { DashboardSummary, UserSubscription } from "@/types/portal";
 import { formatDate, formatTime } from "@/utils/helpers";
 
 type SubscriptionRow = {
@@ -53,6 +56,8 @@ export default function Subscriptions() {
     subscriptionType: "basic",
   });
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [currentSubscription, setCurrentSubscription] =
+    useState<UserSubscription | null>(null);
   const [departmentName, setDepartmentName] = useState("BASIC");
   const [isLoading, setIsLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -66,17 +71,18 @@ export default function Subscriptions() {
           return;
         }
 
-        const [dashboardData, transactionData, enrollment] = await Promise.all([
-          fetchDashboardSummary().catch(() => ({
-            subscriptionExpiresIn: 0,
-            walletBalance: 0,
-            currency: "₦",
-            subscriptionStatus: "expired" as const,
-            subscriptionType: "basic",
-          })),
-          fetchUserTransactions(),
-          fetchUserEnrollment().catch(() => null),
-        ]);
+        const [dashboardData, transactionData, subscription] =
+          await Promise.all([
+            fetchDashboardSummary().catch(() => ({
+              subscriptionExpiresIn: 0,
+              walletBalance: 0,
+              currency: "₦",
+              subscriptionStatus: "expired" as const,
+              subscriptionType: "basic",
+            })),
+            fetchUserTransactions(),
+            fetchUserSubscription().catch(() => null),
+          ]);
 
         setSummary(dashboardData);
         setTransactions(
@@ -86,8 +92,9 @@ export default function Subscriptions() {
               transaction.type === "exam_payment",
           ),
         );
-        if (enrollment?.departmentName) {
-          setDepartmentName(enrollment.departmentName.toUpperCase());
+        setCurrentSubscription(subscription);
+        if (subscription?.departmentName) {
+          setDepartmentName(subscription.departmentName.toUpperCase());
         }
       } finally {
         setIsLoading(false);
@@ -102,24 +109,57 @@ export default function Subscriptions() {
     : "Student User";
   const userRole = user?.role || "STUDENT";
 
-  const rows = useMemo<SubscriptionRow[]>(
-    () =>
-      transactions.map((transaction, index) => {
-        const subscriptionDateIso = transaction.createdAt;
-        const dueDateIso = addDays(subscriptionDateIso, 30);
+  const rows = useMemo<SubscriptionRow[]>(() => {
+    const historyRows = transactions.map((transaction, index) => {
+      const subscriptionDateIso = transaction.createdAt;
+      const dueDateIso = addDays(subscriptionDateIso, 30);
 
-        return {
-          sn: index + 1,
-          subscriptionId: transaction.id,
-          department: departmentName,
-          className: `${(summary.subscriptionType || "basic").toUpperCase()} 1`,
-          subscriptionDate: `${formatDate(subscriptionDateIso)} ${formatTime(subscriptionDateIso)}`,
-          dueDate: `${formatDate(dueDateIso)} ${formatTime(dueDateIso)}`,
-          status: getSubscriptionStatus(dueDateIso, transaction.status),
-        };
-      }),
-    [transactions, departmentName, summary.subscriptionType],
-  );
+      return {
+        sn: index + 1,
+        subscriptionId: transaction.id,
+        department: departmentName,
+        className: `${(summary.subscriptionType || "basic").toUpperCase()} 1`,
+        subscriptionDate: `${formatDate(subscriptionDateIso)} ${formatTime(subscriptionDateIso)}`,
+        dueDate: `${formatDate(dueDateIso)} ${formatTime(dueDateIso)}`,
+        status: getSubscriptionStatus(dueDateIso, transaction.status),
+      };
+    });
+
+    if (!currentSubscription?.departmentId && !currentSubscription?.examId) {
+      return historyRows.map((row, index) => ({ ...row, sn: index + 1 }));
+    }
+
+    const liveRow: SubscriptionRow = {
+      sn: 1,
+      subscriptionId:
+        currentSubscription.examId ||
+        currentSubscription.departmentId ||
+        "current-subscription",
+      department: (
+        currentSubscription.departmentName || departmentName
+      ).toUpperCase(),
+      className: `${(currentSubscription.subscriptionType || "basic").toUpperCase()}`,
+      subscriptionDate: currentSubscription.lastPaymentDate
+        ? `${formatDate(currentSubscription.lastPaymentDate)} ${formatTime(currentSubscription.lastPaymentDate)}`
+        : "—",
+      dueDate: `${formatDate(currentSubscription.subscriptionExpiresAt)} ${formatTime(currentSubscription.subscriptionExpiresAt)}`,
+      status: currentSubscription.isSubscriptionActive ? "active" : "expired",
+    };
+
+    const withoutDuplicate = historyRows.filter(
+      (row) => row.subscriptionId !== liveRow.subscriptionId,
+    );
+
+    return [liveRow, ...withoutDuplicate].map((row, index) => ({
+      ...row,
+      sn: index + 1,
+    }));
+  }, [
+    transactions,
+    departmentName,
+    summary.subscriptionType,
+    currentSubscription,
+  ]);
 
   const handleWalletLoadSuccess = () => {
     fetchDashboardSummary()

@@ -1,46 +1,16 @@
 import { apiClient } from "@/lib/api-client";
 import {
   DashboardSummary,
-  SubjectAccordionData,
+  TutorialSubject,
   PaymentStatus,
   TutorialVideo,
   UserEnrollment,
+  UserSubscription,
+  ClassVideo,
 } from "@/types/portal";
 import { useAuthStore } from "@/store/authStore";
 
-interface RawTransaction {
-  statusId?: number | string;
-  transactionType?: string;
-  expiresAt?: string;
-  subscriptionType?: string;
-  walletBalance?: number;
-  currency?: string;
-  createdAt?: string;
-  nextBillingDate?: string;
-}
-
-interface RawExamRegistration {
-  departmentId?: string | number;
-  departmentName?: string;
-  examId?: string | number;
-  examAbbr?: string;
-  examTitle?: string;
-  status?: string;
-}
-
-interface RawEbook {
-  examId?: string | number;
-  examTitle?: string;
-  ebookTitle?: string;
-  ebookId?: string | number;
-  regPix?: string | null;
-}
-
-interface RawSiteExam {
-  publishId?: string | number;
-  regTitle?: string;
-  examAbbr?: string;
-}
+type RecordLike = Record<string, unknown>;
 
 interface ApiErrorLike {
   status?: number;
@@ -53,372 +23,429 @@ const getErrorStatus = (error: unknown): number | undefined => {
   return apiError.status ?? apiError.response?.status;
 };
 
-export const checkPaymentStatus = async (): Promise<PaymentStatus> => {
-  try {
-    // Check if user is authenticated first
-    const token = useAuthStore.getState().token;
-    if (!token) {
-      console.warn("No authentication token found, user needs to log in");
-      return {
-        isSubscriptionActive: false,
-        subscriptionExpiresAt: new Date().toISOString(),
-        subscriptionType: "basic",
-        walletBalance: 0,
-        currency: "₦",
-      };
-    }
+const inactiveSubscription = (): UserSubscription => ({
+  isSubscriptionActive: false,
+  subscriptionExpiresAt: new Date().toISOString(),
+  subscriptionType: "basic",
+  walletBalance: 0,
+  currency: "₦",
+  departmentId: "",
+  departmentName: "",
+  examId: "",
+  examAbbreviation: "",
+});
 
-    const transactions = await apiClient.get<RawTransaction[]>(
-      "/user/payment/fetch-transactions",
+const asRecord = (value: unknown): RecordLike => {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as RecordLike;
+  }
+  return {};
+};
+
+const unwrapPayload = (value: unknown): unknown => {
+  let current = value;
+  for (let i = 0; i < 3; i += 1) {
+    const record = asRecord(current);
+    if (record.data !== undefined) {
+      current = record.data;
+      continue;
+    }
+    break;
+  }
+  return current;
+};
+
+const asArray = (value: unknown): RecordLike[] => {
+  const payload = unwrapPayload(value);
+  if (Array.isArray(payload)) {
+    return payload.filter(
+      (item): item is RecordLike =>
+        !!item && typeof item === "object" && !Array.isArray(item),
     );
+  }
 
-    if (!Array.isArray(transactions)) {
-      throw new Error("Invalid transactions data format");
-    }
-
-    // Find the most recent successful subscription transaction
-    const activeSubscription = transactions.find(
-      (transaction) =>
-        transaction.statusId === 4 && // Success status
-        (transaction.transactionType === "subscription" ||
-          transaction.transactionType === "exam"),
-    );
-
-    // Calculate subscription status based on transaction data
-    const isActive = !!activeSubscription;
-    const expirationDate = activeSubscription?.expiresAt
-      ? new Date(activeSubscription.expiresAt)
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
-
-    return {
-      isSubscriptionActive: isActive,
-      subscriptionExpiresAt: expirationDate.toISOString(),
-      subscriptionType: activeSubscription?.subscriptionType || "basic",
-      walletBalance: activeSubscription?.walletBalance || 0,
-      currency: activeSubscription?.currency || "₦",
-      lastPaymentDate: activeSubscription?.createdAt,
-      nextBillingDate: activeSubscription?.nextBillingDate,
-    };
-  } catch (error: unknown) {
-    console.error("Payment status check failed:", error);
-    const errorStatus = getErrorStatus(error);
-
-    // Handle authentication errors or server errors gracefully
-    if (errorStatus === 401 || errorStatus === 403) {
-      // User not authenticated - return inactive subscription
-      console.warn("Authentication failed, user needs to log in");
-      return {
-        isSubscriptionActive: false,
-        subscriptionExpiresAt: new Date().toISOString(),
-        subscriptionType: "basic",
-        walletBalance: 0,
-        currency: "₦",
-      };
-    }
-
-    if (errorStatus === 500) {
-      // Server error - check if user is logged in to determine fallback behavior
-      const token = useAuthStore.getState().token;
-      if (!token) {
-        console.warn("Server error and no auth token, user needs to log in");
-        return {
-          isSubscriptionActive: false,
-          subscriptionExpiresAt: new Date().toISOString(),
-          subscriptionType: "basic",
-          walletBalance: 0,
-          currency: "₦",
-        };
-      }
-
-      // If user is logged in but server error, return inactive subscription
-      console.error(
-        "Server error for authenticated user, cannot determine payment status",
+  const record = asRecord(payload);
+  const nestedKeys = ["items", "subjects", "tutorials", "years", "records"];
+  for (const key of nestedKeys) {
+    if (Array.isArray(record[key])) {
+      return (record[key] as unknown[]).filter(
+        (item): item is RecordLike =>
+          !!item && typeof item === "object" && !Array.isArray(item),
       );
-      return {
-        isSubscriptionActive: false,
-        subscriptionExpiresAt: new Date().toISOString(),
-        subscriptionType: "basic",
-        walletBalance: 0,
-        currency: "₦",
-      };
     }
+  }
 
+  return [];
+};
+
+const asString = (value: unknown, fallback = ""): string => {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return fallback;
+};
+
+const firstString = (source: RecordLike, keys: string[], fallback = "") => {
+  for (const key of keys) {
+    const value = asString(source[key]);
+    if (value) return value;
+  }
+  return fallback;
+};
+
+const asNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const firstNumber = (source: RecordLike, keys: string[], fallback = 0) => {
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null) {
+      return asNumber(source[key], fallback);
+    }
+  }
+  return fallback;
+};
+
+const isActiveStatus = (source: RecordLike): boolean => {
+  if (typeof source.isSubscriptionActive === "boolean") {
+    return source.isSubscriptionActive;
+  }
+  if (typeof source.isActive === "boolean") {
+    return source.isActive;
+  }
+
+  const status = firstString(source, [
+    "status",
+    "subscriptionStatus",
+  ]).toLowerCase();
+  if (
+    ["expired", "inactive", "cancelled", "canceled", "failed"].includes(status)
+  ) {
+    return false;
+  }
+  if (["active", "success", "valid"].includes(status)) {
+    return true;
+  }
+
+  const statusId = firstString(source, ["statusId"]);
+  if (statusId === "1" || statusId === "4") return true;
+  if (statusId === "2" || statusId === "5") return false;
+
+  return Boolean(
+    firstString(source, ["departmentId", "examId", "subscriptionId", "userId"]),
+  );
+};
+
+const mapSubscription = (raw: unknown): UserSubscription => {
+  const payload = unwrapPayload(raw);
+  const source = Array.isArray(payload)
+    ? asRecord(payload[0])
+    : asRecord(payload);
+  const expiresAt = firstString(source, [
+    "subscriptionExpiresAt",
+    "expiresAt",
+    "expiryDate",
+    "dueDate",
+    "nextBillingDate",
+  ]);
+
+  const activeFlag = isActiveStatus(source);
+  const expiryTime = expiresAt ? new Date(expiresAt).getTime() : NaN;
+  const stillValid = Number.isNaN(expiryTime) || expiryTime > Date.now();
+
+  return {
+    isSubscriptionActive: activeFlag && stillValid,
+    subscriptionExpiresAt: expiresAt || new Date().toISOString(),
+    subscriptionType: firstString(
+      source,
+      ["subscriptionType", "planName"],
+      "basic",
+    ),
+    walletBalance: firstNumber(
+      source,
+      ["walletBalance", "balance", "amount"],
+      0,
+    ),
+    currency: firstString(source, ["currency"], "₦"),
+    departmentId: firstString(source, ["departmentId"]),
+    departmentName: firstString(source, ["departmentName", "department"]),
+    examId: firstString(source, ["examId"]),
+    examAbbreviation: firstString(source, [
+      "examAbbreviation",
+      "examAbbr",
+      "examTitle",
+      "exam",
+    ]),
+    lastPaymentDate:
+      firstString(source, ["lastPaymentDate", "createdAt"]) || undefined,
+    nextBillingDate: firstString(source, ["nextBillingDate"]) || undefined,
+  };
+};
+
+const enrollmentFromSubscription = (
+  subscription: UserSubscription,
+): UserEnrollment | null => {
+  if (!subscription.departmentId && !subscription.examId) {
+    return null;
+  }
+
+  return {
+    departmentId: subscription.departmentId,
+    departmentName: subscription.departmentName,
+    examId: subscription.examId,
+    examAbbreviation: subscription.examAbbreviation,
+    status: subscription.isSubscriptionActive ? "active" : "expired",
+  };
+};
+
+const mapSubject = (
+  item: RecordLike,
+  enrollment?: UserEnrollment | UserSubscription | null,
+): TutorialSubject => {
+  const id = firstString(item, ["subjectId", "id"]);
+  return {
+    id,
+    name: firstString(item, ["subjectName", "name"], "Subject"),
+    departmentId: firstString(
+      item,
+      ["departmentId"],
+      enrollment?.departmentId || "",
+    ),
+    department: firstString(
+      item,
+      ["departmentName", "department"],
+      enrollment?.departmentName || "",
+    ),
+    examId: firstString(item, ["examId"], enrollment?.examId || ""),
+    exam: firstString(
+      item,
+      ["examAbbreviation", "examAbbr", "examTitle", "exam"],
+      enrollment?.examAbbreviation || "",
+    ),
+    examAbbr: firstString(
+      item,
+      ["examAbbreviation", "examAbbr"],
+      enrollment?.examAbbreviation || "",
+    ),
+  };
+};
+
+const mapClassVideo = (item: RecordLike, yearLabel?: string): ClassVideo => {
+  const year =
+    yearLabel ||
+    firstString(item, ["yearValue", "year", "yearName"], "Unknown year");
+
+  return {
+    id: firstString(item, ["tutorialId", "id"]),
+    title: firstString(item, ["tutorialTitle", "title"], "Tutorial"),
+    year,
+    yearId: firstString(item, ["yearId"]) || undefined,
+    duration: firstString(item, ["tutorialDuration", "duration"]) || undefined,
+    subjectId: firstString(item, ["subjectId"]),
+    description:
+      firstString(item, ["tutorialDescription", "description"]) || undefined,
+    thumbnailUrl:
+      firstString(item, ["tutorialPicture", "thumbnailUrl", "thumbnail"]) ||
+      undefined,
+  };
+};
+
+const mapTutorialVideo = (item: RecordLike): TutorialVideo => {
+  const classVideo = mapClassVideo(item);
+  return {
+    id: classVideo.id,
+    title: classVideo.title,
+    subject: firstString(item, ["subjectName", "subject"]),
+    department: firstString(item, ["departmentName", "department"]),
+    exam: firstString(item, ["examAbbreviation", "examAbbr", "exam"]),
+    year: classVideo.year,
+    videoUrl: firstString(item, [
+      "tutorialVideo",
+      "tutorialVideoUrl",
+      "videoUrl",
+      "video",
+    ]),
+    thumbnailUrl: classVideo.thumbnailUrl,
+    duration: classVideo.duration,
+    description: classVideo.description,
+  };
+};
+
+const buildYearLookup = (years: RecordLike[]): Map<string, string> => {
+  const lookup = new Map<string, string>();
+  years.forEach((year) => {
+    const yearId = firstString(year, ["yearId", "id"]);
+    const yearValue = firstString(year, ["yearValue", "year", "yearName"]);
+    if (yearId && yearValue) {
+      lookup.set(yearId, yearValue);
+    }
+  });
+  return lookup;
+};
+
+export const fetchUserSubscription = async (): Promise<UserSubscription> => {
+  const token = useAuthStore.getState().token;
+  if (!token) {
+    return inactiveSubscription();
+  }
+
+  try {
+    const data = await apiClient.get<unknown>(
+      "/user/accounts/fetch-user-subscription",
+    );
+    const subscription = mapSubscription(data);
+    const enrollment = enrollmentFromSubscription(subscription);
+    if (enrollment) {
+      useAuthStore.getState().setUserEnrollment(enrollment);
+    }
+    return subscription;
+  } catch (error: unknown) {
+    const status = getErrorStatus(error);
+    if (status === 401 || status === 403 || status === 404) {
+      return inactiveSubscription();
+    }
     throw error;
   }
+};
+
+export const checkPaymentStatus = async (): Promise<PaymentStatus> => {
+  const subscription = await fetchUserSubscription();
+  return {
+    isSubscriptionActive: subscription.isSubscriptionActive,
+    subscriptionExpiresAt: subscription.subscriptionExpiresAt,
+    subscriptionType: subscription.subscriptionType,
+    walletBalance: subscription.walletBalance,
+    currency: subscription.currency,
+    lastPaymentDate: subscription.lastPaymentDate,
+    nextBillingDate: subscription.nextBillingDate,
+  };
 };
 
 export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
-  try {
-    // Check if user is authenticated first
-    const token = useAuthStore.getState().token;
-    if (!token) {
-      console.warn("No authentication token found for dashboard summary");
-      return {
-        subscriptionExpiresIn: 0,
-        walletBalance: 0,
-        currency: "₦",
-        subscriptionStatus: "expired",
-        subscriptionType: "basic",
-      };
-    }
-
-    // Since there's no dedicated dashboard summary endpoint, we'll derive it from payment data
-    const paymentStatus = await checkPaymentStatus();
-
-    // Calculate days until expiration
-    const expirationDate = new Date(paymentStatus.subscriptionExpiresAt);
-    const today = new Date();
-    const daysUntilExpiration = Math.max(
-      0,
-      Math.ceil(
-        (expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    );
-
+  const token = useAuthStore.getState().token;
+  if (!token) {
     return {
-      subscriptionExpiresIn: daysUntilExpiration,
-      walletBalance: paymentStatus.walletBalance,
-      currency: paymentStatus.currency,
-      subscriptionStatus: paymentStatus.isSubscriptionActive
-        ? "active"
-        : "expired",
-      subscriptionType: paymentStatus.subscriptionType,
+      subscriptionExpiresIn: 0,
+      walletBalance: 0,
+      currency: "₦",
+      subscriptionStatus: "expired",
+      subscriptionType: "basic",
     };
-  } catch (error: unknown) {
-    console.error("Dashboard summary fetch failed:", error);
-
-    // Check if user is authenticated to determine appropriate fallback
-    const token = useAuthStore.getState().token;
-    if (!token) {
-      return {
-        subscriptionExpiresIn: 0,
-        walletBalance: 0,
-        currency: "₦",
-        subscriptionStatus: "expired",
-        subscriptionType: "basic",
-      };
-    }
-
-    // Return error state for authenticated users - no demo data
-    throw error;
   }
+
+  const subscription = await fetchUserSubscription();
+  const expirationDate = new Date(subscription.subscriptionExpiresAt);
+  const daysUntilExpiration = Number.isNaN(expirationDate.getTime())
+    ? 0
+    : Math.max(
+        0,
+        Math.ceil(
+          (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
+      );
+
+  return {
+    subscriptionExpiresIn: daysUntilExpiration,
+    walletBalance: subscription.walletBalance,
+    currency: subscription.currency,
+    subscriptionStatus: subscription.isSubscriptionActive
+      ? "active"
+      : "expired",
+    subscriptionType: subscription.subscriptionType,
+  };
 };
 
 export const fetchUserEnrollment = async (): Promise<UserEnrollment | null> => {
-  try {
-    // Check if user is authenticated first
-    const token = useAuthStore.getState().token;
-    if (!token) {
-      console.warn("No authentication token found for user enrollment");
-      return null;
-    }
-
-    // Since there's no dedicated user enrollment endpoint, we'll derive it from available data
-    // This would typically come from the user's signup data or exam registrations
-
-    // Try to get user exam registrations to determine enrollment
-    const examData = await apiClient.get<RawExamRegistration[]>(
-      "/user/exam/fetch-exam",
-    );
-
-    if (Array.isArray(examData) && examData.length > 0) {
-      // Use the most recent exam registration to determine enrollment
-      const latestExam = examData[0];
-
-      return {
-        departmentId: String(latestExam.departmentId || "1"),
-        departmentName: latestExam.departmentName || "Science",
-        examId: String(latestExam.examId || ""),
-        examAbbreviation: latestExam.examAbbr || "WAEC",
-        status: latestExam.status || "active",
-      };
-    }
-
-    // If no exam data, return null to indicate no enrollment found
-    return null;
-  } catch (error: unknown) {
-    console.error("User enrollment fetch failed:", error);
-
-    // Check if user is authenticated to determine appropriate fallback
-    const token = useAuthStore.getState().token;
-    if (!token) {
-      return null;
-    }
-
-    // For authenticated users, don't return demo data - let the error propagate
-    throw error;
-  }
+  const subscription = await fetchUserSubscription();
+  return enrollmentFromSubscription(subscription);
 };
 
 export const fetchTutorialSubjects = async (
   userEnrollment?: UserEnrollment | null,
-): Promise<SubjectAccordionData[]> => {
+): Promise<TutorialSubject[]> => {
+  const enrollment = userEnrollment || useAuthStore.getState().userEnrollment;
+
+  const query = enrollment?.departmentId
+    ? `?departmentId=${encodeURIComponent(enrollment.departmentId)}`
+    : "";
+
   try {
-    // Get user enrollment data from parameter or auth store
-    let enrollment = userEnrollment;
-    if (!enrollment) {
-      enrollment = useAuthStore.getState().userEnrollment;
-    }
+    const data = await apiClient.get<unknown>(
+      `/preset-data/fetch-external-subjects${query}`,
+    );
 
-    if (!enrollment) {
-      console.warn("No user enrollment data found, cannot fetch subjects");
-      return [];
-    }
-
-    // Since there's no dedicated subjects endpoint, we'll use the available exam data
-    // and derive subjects from the user's exam registrations and available ebooks
-
-    try {
-      // Try to get ebooks which might contain subject information
-      const ebooksData = await apiClient.get<RawEbook[]>(
-        "/user/ebooks/fetch-ebook",
-      );
-
-      if (Array.isArray(ebooksData) && ebooksData.length > 0) {
-        // Group ebooks by exam/subject to create tutorial subjects
-        const subjectMap = new Map<string, SubjectAccordionData>();
-
-        ebooksData.forEach((ebook) => {
-          const subjectKey = String(ebook.examId || "general");
-          if (!subjectMap.has(subjectKey)) {
-            subjectMap.set(subjectKey, {
-              id: subjectKey,
-              name: ebook.examTitle || ebook.ebookTitle || "General Studies",
-              department: enrollment.departmentName,
-              departmentId: enrollment.departmentId,
-              exam: enrollment.examAbbreviation,
-              examId: enrollment.examId,
-              examAbbr: enrollment.examAbbreviation,
-              items: [],
-            });
-          }
-
-          // Add ebook as a tutorial item
-          subjectMap.get(subjectKey)?.items.push({
-            id: String(ebook.ebookId || `${subjectKey}-ebook`),
-            title: `${ebook.ebookTitle || "Study Material"} (${enrollment.examAbbreviation})`,
-            year: new Date().getFullYear().toString(),
-            videoCount: 0, // Ebooks don't have videos
-            description: ebook.ebookTitle || "Study material",
-          });
-        });
-
-        return Array.from(subjectMap.values());
-      }
-    } catch (ebookError: unknown) {
-      console.warn("Could not fetch ebooks:", ebookError);
-    }
-
-    // Fallback: Create subjects based on exam data
-    try {
-      const examData = await apiClient.get<RawExamRegistration[]>(
-        "/user/exam/fetch-exam",
-      );
-
-      if (Array.isArray(examData) && examData.length > 0) {
-        return examData.map((exam) => ({
-          id: String(exam.examId || ""),
-          name: exam.examTitle || exam.examAbbr || "Exam Preparation",
-          department: enrollment.departmentName,
-          departmentId: enrollment.departmentId,
-          exam: enrollment.examAbbreviation,
-          examId: enrollment.examId,
-          examAbbr: enrollment.examAbbreviation,
-          items: [
-            {
-              id: `${String(exam.examId || "exam")}_prep`,
-              title: `${exam.examTitle || exam.examAbbr} Preparation`,
-              year: new Date().getFullYear().toString(),
-              videoCount: 0,
-              description: `Preparation materials for ${exam.examTitle || exam.examAbbr}`,
-            },
-          ],
-        }));
-      }
-    } catch (examError: unknown) {
-      console.warn("Could not fetch exam data:", examError);
-    }
-
-    // Final fallback: Use site exam data to create generic subjects
-    try {
-      const siteExams = await apiClient.get<RawSiteExam[]>(
-        "/site/exams/fetch-all-exams?pageCategoryId=examCategory&countryId=NG",
-      );
-
-      if (Array.isArray(siteExams) && siteExams.length > 0) {
-        return siteExams.slice(0, 5).map((exam) => ({
-          id: String(exam.publishId || ""),
-          name: exam.regTitle || exam.examAbbr || "International Exam",
-          department: enrollment.departmentName,
-          departmentId: enrollment.departmentId,
-          exam: enrollment.examAbbreviation,
-          examId: enrollment.examId,
-          examAbbr: enrollment.examAbbreviation,
-          items: [
-            {
-              id: `${String(exam.publishId || "site-exam")}_2024`,
-              title: `${exam.regTitle || exam.examAbbr} (2024 ${enrollment.examAbbreviation})`,
-              year: "2024",
-              videoCount: 0, // No mock video count
-              description: `${exam.regTitle || "Exam"} tutorial materials`,
-            },
-            {
-              id: `${String(exam.publishId || "site-exam")}_2025`,
-              title: `${exam.regTitle || exam.examAbbr} (2025 ${enrollment.examAbbreviation})`,
-              year: "2025",
-              videoCount: 0, // No mock video count
-              description: `${exam.regTitle || "Exam"} tutorial materials`,
-            },
-          ],
-        }));
-      }
-    } catch (siteError: unknown) {
-      console.warn("Could not fetch site exam data:", siteError);
-    }
-
-    // No fallback data - return empty array
-    return [];
+    return asArray(data)
+      .map((item) => mapSubject(item, enrollment))
+      .filter((subject) => subject.id);
   } catch (error) {
     console.error("Tutorial subjects fetch failed:", error);
-
-    // Return empty array as final fallback
     return [];
   }
 };
 
+export const fetchTutorialsByDepartmentAndExam = async (
+  departmentId: string,
+  examId: string,
+  subjectId?: string,
+): Promise<ClassVideo[]> => {
+  const [tutorialsResponse, yearsResponse] = await Promise.all([
+    apiClient.get<unknown>(
+      `/admin/tutorials/fetch-tutorials-by-department-and-exam?departmentId=${encodeURIComponent(departmentId)}&examId=${encodeURIComponent(examId)}`,
+    ),
+    apiClient
+      .get<unknown>("/admin/years/fetch-year-by-departments")
+      .catch(() => []),
+  ]);
+
+  const yearLookup = buildYearLookup(asArray(yearsResponse));
+
+  return asArray(tutorialsResponse)
+    .filter((item) => {
+      if (!subjectId) return true;
+      const itemSubjectId = firstString(item, ["subjectId"]);
+      return !itemSubjectId || itemSubjectId === subjectId;
+    })
+    .map((item) => {
+      const yearId = firstString(item, ["yearId"]);
+      return mapClassVideo(item, yearLookup.get(yearId));
+    })
+    .filter((video) => video.id);
+};
+
+export const fetchTutorialById = async (
+  tutorialId: string,
+): Promise<TutorialVideo | null> => {
+  const data = await apiClient.get<unknown>(
+    `/admin/tutorials/fetch-tutorial-by-id?tutorialId=${encodeURIComponent(tutorialId)}`,
+  );
+
+  const payload = unwrapPayload(data);
+  const record = Array.isArray(payload)
+    ? asArray(payload)[0]
+    : asRecord(payload);
+
+  if (!record || !firstString(record, ["tutorialId", "id"])) {
+    return null;
+  }
+
+  return mapTutorialVideo(record);
+};
+
 export const fetchTutorialVideos = async (
   subjectId: string,
-): Promise<TutorialVideo[]> => {
-  try {
-    // Since there are no dedicated video endpoints in the Postman collection,
-    // we'll return ebook data as tutorial materials for now
-    const ebooksData = await apiClient.get<RawEbook[]>(
-      "/user/ebooks/fetch-ebook",
-    );
-
-    if (!Array.isArray(ebooksData)) {
-      throw new Error("Invalid ebooks data format received from API");
-    }
-
-    // Filter ebooks by subject if possible
-    const filteredEbooks = ebooksData.filter(
-      (ebook) => !subjectId || String(ebook.examId || "") === subjectId,
-    );
-
-    return filteredEbooks.map((ebook) => ({
-      id: String(ebook.ebookId || ""),
-      title: ebook.ebookTitle || "Tutorial Material",
-      subject: ebook.examTitle || "General Studies",
-      department: "General",
-      exam: String(ebook.examId || ""),
-      year: new Date().getFullYear().toString(),
-      videoUrl: "",
-      thumbnailUrl: ebook.regPix || undefined,
-      duration: "N/A",
-      description: ebook.ebookTitle || "Study material",
-    }));
-  } catch (error) {
-    console.error("Tutorial videos fetch failed:", error);
-    throw error;
+): Promise<ClassVideo[]> => {
+  const enrollment = useAuthStore.getState().userEnrollment;
+  if (!enrollment?.departmentId || !enrollment?.examId) {
+    return [];
   }
+
+  return fetchTutorialsByDepartmentAndExam(
+    enrollment.departmentId,
+    enrollment.examId,
+    subjectId,
+  );
 };

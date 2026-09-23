@@ -3,10 +3,9 @@ import {
   UserStar,
   TvMinimalPlay,
   CalendarSync,
-  ArrowRightLeft,
   Settings2,
   LogOut,
-} from "lucide-react"; // 👈 import icons
+} from "lucide-react";
 
 export const NAV_LINKS = [
   {
@@ -31,11 +30,6 @@ export const SIDEBAR_TOP_LINKS = [
     name: "Tutorials",
     href: "/tutorials",
     icon: TvMinimalPlay,
-  },
-  {
-    name: "Transactions",
-    href: "/transactions",
-    icon: ArrowRightLeft,
   },
   {
     name: "Subscriptions",
