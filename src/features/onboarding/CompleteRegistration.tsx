@@ -149,6 +149,20 @@ export function CompleteRegistration() {
 
         setAuth(user, token);
 
+        // Seed enrollment from signup payload (always reliable) or login response
+        const deptId =
+          pendingData.signupPayload?.departmentId || user.departmentId || "";
+        const examId = pendingData.signupPayload?.examId || user.examId || "";
+        if (deptId && examId) {
+          useAuthStore.getState().setUserEnrollment({
+            departmentId: deptId,
+            departmentName: user.departmentName ?? "",
+            examId,
+            examAbbreviation: user.examAbbreviation ?? "",
+            status: "active",
+          });
+        }
+
         showToast({
           variant: "success",
           title: "Welcome!",

@@ -21,14 +21,14 @@ export const Header = () => {
 
   const [activeLink, setActiveLink] = useState("Dashboard");
   return (
-    <header className="bg-white w-full h-[60px] flex justify-between items-center">
+    <header className="bg-white w-full h-[60px] flex justify-between items-center gap-2 border-b border-slate-100 px-3 sm:px-5">
       <div className="flex items-center gap-3">
         <nav>
-          <ul className="flex items-center gap-6 text-white">
+          <ul className="flex items-center gap-1 sm:gap-3 text-white">
             {NAV_LINKS.map((link) => (
               <Link href={link.href} key={link.name}>
                 <li
-                  className={`transition-colors duration-300 text-(--primary-hover-color)  whitespace-nowrap  flex items-center justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-4 py-2.5 rounded-lg ${
+                  className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-2 sm:px-4 py-2.5 rounded-lg ${
                     activeLink === link.name ? "bg-gray-500/10" : ""
                   }`}
                   onClick={() => setActiveLink(link.name)}
@@ -39,7 +39,7 @@ export const Header = () => {
                       className="inline-block mr-1 text-(--secondary-color)"
                     />
                   )}
-                  <span>{link.name}</span>
+                  <span className="sr-only lg:not-sr-only">{link.name}</span>
                 </li>
               </Link>
             ))}
@@ -63,7 +63,7 @@ export const Header = () => {
             <div className="text-white font-medium-custom w-[40px] h-[40px] text-xs bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] rounded-full flex items-center justify-center">
               {getInitials(userName)}
             </div>
-            <span className="text-md text-black font-medium-custom">
+            <span className="hidden sm:inline text-sm text-black font-medium-custom">
               {userName}
             </span>
             <ChevronDown size={16} className="text-black" />

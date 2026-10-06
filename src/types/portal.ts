@@ -42,6 +42,23 @@ export interface ClassVideo {
   thumbnailUrl?: string;
 }
 
+// A subject together with its videos already grouped by year — derived from
+// the fetch-tutorials-by-department-and-exam response so no second API call
+// is ever needed.
+export interface YearGroup {
+  yearId: string;
+  yearLabel: string; // e.g. "2024"
+  videos: ClassVideo[];
+}
+
+export interface SubjectWithVideos {
+  subjectId: string;
+  subjectName: string;
+  departmentId: string;
+  examId: string;
+  yearGroups: YearGroup[]; // sorted newest-first, including years awaiting content
+}
+
 export interface UserSubscription {
   isSubscriptionActive: boolean;
   subscriptionExpiresAt: string;
@@ -54,6 +71,10 @@ export interface UserSubscription {
   examAbbreviation: string;
   lastPaymentDate?: string;
   nextBillingDate?: string;
+  // Fields from actual API response
+  subscriptionId?: string;
+  daysLeft?: number;
+  statusName?: string;
 }
 
 export interface PaymentStatus {

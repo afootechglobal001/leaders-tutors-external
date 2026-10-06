@@ -44,6 +44,18 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
       const { token, user } = normalizeAuthResponse(response, data.email);
 
       useAuthStore.getState().setAuth(user, token);
+
+      // Persist enrollment so tutorial fetches have departmentId + examId immediately
+      if (user.departmentId && user.examId) {
+        useAuthStore.getState().setUserEnrollment({
+          departmentId: user.departmentId,
+          departmentName: user.departmentName ?? "",
+          examId: user.examId,
+          examAbbreviation: user.examAbbreviation ?? "",
+          status: "active",
+        });
+      }
+
       showToast({
         variant: "success",
         title: "Login successful",

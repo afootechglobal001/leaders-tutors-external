@@ -169,6 +169,22 @@ export default function SignUp() {
       }
 
       setAuth(user, token);
+
+      // Seed enrollment — prefer form data (always available at signup),
+      // fall back to whatever the login response returned.
+      const deptId =
+        pending?.signupPayload?.departmentId || user.departmentId || "";
+      const examId = pending?.signupPayload?.examId || user.examId || "";
+      if (deptId && examId) {
+        useAuthStore.getState().setUserEnrollment({
+          departmentId: deptId,
+          departmentName: user.departmentName ?? "",
+          examId,
+          examAbbreviation: user.examAbbreviation ?? "",
+          status: "active",
+        });
+      }
+
       setShowInstructionModal(false);
       showToast({
         variant: "success",

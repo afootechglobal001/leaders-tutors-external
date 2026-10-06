@@ -31,6 +31,7 @@ interface ModalProps {
   closeOnOutsideClick?: boolean;
   /** Additional class names for the modal */
   className?: string;
+  ariaLabelledBy?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -39,6 +40,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   closeOnOutsideClick = false,
   className = "",
+  ariaLabelledBy,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +69,7 @@ export const Modal: React.FC<ModalProps> = ({
       className={`fixed w-full h-full inset-0 z-[999] overflow-y-auto bg-black/50 transition-opacity duration-200 ease-in-out ${className}`}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={ariaLabelledBy}
     >
       <div
         ref={modalRef}

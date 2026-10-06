@@ -53,7 +53,7 @@ interface Department {
 }
 
 interface Exam {
-  examId: string;
+  examId: string | number;
   examAbbreviation: string;
 }
 
@@ -110,7 +110,7 @@ export const fetchExams = async (): Promise<DropdownOption[]> => {
     : (data as { data?: Exam[] })?.data || [];
 
   return finalData.map((item: Exam) => ({
-    value: item.examId,
+    value: String(item.examId),
     label: item.examAbbreviation,
   }));
 };
@@ -374,6 +374,48 @@ export const normalizeAuthResponse = (
           "middle_name",
           "middleName",
         ]) || null,
+      // Enrollment — the login response carries these so the app can fetch
+      // tutorials immediately without a separate subscription call.
+      // departmentId can be a number (1) — coerce to string explicitly.
+      // Fields live both at top level AND in nested departmentData/examData.
+      departmentId: (() => {
+        const src = sourceData as Record<string, unknown>;
+        const deptData = src.departmentData as
+          | Record<string, unknown>
+          | undefined;
+        const raw = src.departmentId ?? deptData?.departmentId;
+        if (raw === undefined || raw === null || raw === "") return undefined;
+        return String(raw);
+      })(),
+      departmentName: (() => {
+        const src = sourceData as Record<string, unknown>;
+        const deptData = src.departmentData as
+          | Record<string, unknown>
+          | undefined;
+        const raw =
+          deptData?.departmentName ??
+          src.departmentName ??
+          src.department_name ??
+          src.department;
+        return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+      })(),
+      examId: (() => {
+        const src = sourceData as Record<string, unknown>;
+        const examData = src.examData as Record<string, unknown> | undefined;
+        const raw = src.examId ?? examData?.examId;
+        if (raw === undefined || raw === null || raw === "") return undefined;
+        return String(raw);
+      })(),
+      examAbbreviation: (() => {
+        const src = sourceData as Record<string, unknown>;
+        const examData = src.examData as Record<string, unknown> | undefined;
+        const raw =
+          examData?.examAbbreviation ??
+          src.examAbbreviation ??
+          src.examAbbr ??
+          src.exam_abbreviation;
+        return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+      })(),
     },
   };
 

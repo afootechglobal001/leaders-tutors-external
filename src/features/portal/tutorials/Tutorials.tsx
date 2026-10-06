@@ -1,5 +1,6 @@
 "use client";
-import { Play } from "lucide-react";
+
+import { Play, BookOpen, ArrowUpRight } from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
 import { useState, useEffect } from "react";
@@ -7,10 +8,10 @@ import { Button } from "@/components/form";
 import Link from "next/link";
 import {
   fetchDashboardSummary,
-  fetchTutorialSubjects,
+  fetchSubjectsWithVideos,
   fetchUserSubscription,
 } from "@/services/portal";
-import { DashboardSummary, TutorialSubject } from "@/types/portal";
+import { DashboardSummary, SubjectWithVideos } from "@/types/portal";
 import WalletLoadModal from "@/components/wallet/WalletLoadModal";
 import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 import ClassVideosModal from "@/components/tutorial/ClassVideosModal";
@@ -25,14 +26,14 @@ export default function Tutorials() {
     subscriptionStatus: "expired",
     subscriptionType: "basic",
   });
-  const [subjects, setSubjects] = useState<TutorialSubject[]>([]);
+  const [subjects, setSubjects] = useState<SubjectWithVideos[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [selectedSubject, setSelectedSubject] =
-    useState<TutorialSubject | null>(null);
+    useState<SubjectWithVideos | null>(null);
 
   useEffect(() => {
     setIsAuthenticated(!!token && !!user);
@@ -40,7 +41,6 @@ export default function Tutorials() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-
         if (!token || !user) {
           setIsLoading(false);
           return;
@@ -63,13 +63,7 @@ export default function Tutorials() {
             subscriptionStatus: "expired" as const,
             subscriptionType: subscription.subscriptionType,
           })),
-          fetchTutorialSubjects({
-            departmentId: subscription.departmentId,
-            departmentName: subscription.departmentName,
-            examId: subscription.examId,
-            examAbbreviation: subscription.examAbbreviation,
-            status: "active",
-          }).catch(() => []),
+          fetchSubjectsWithVideos().catch(() => []),
         ]);
 
         setSummary(sum);
@@ -80,6 +74,7 @@ export default function Tutorials() {
         setIsLoading(false);
       }
     };
+
     loadData();
   }, [token, user]);
 
@@ -87,6 +82,12 @@ export default function Tutorials() {
     ? `${user.first_name} ${user.last_name}`
     : "Student User";
   const userRole = user?.role || "STUDENT";
+  const lessonCount = subjects.reduce(
+    (total, subject) =>
+      total +
+      subject.yearGroups.reduce((count, year) => count + year.videos.length, 0),
+    0,
+  );
 
   if (!isAuthenticated) {
     return (
@@ -142,20 +143,45 @@ export default function Tutorials() {
 
   return (
     <PortalWrapper>
-      <section className="px-6 py-6 bg-white border-b border-[var(--border-color)]">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-[var(--secondary-color-light)] rounded-xl text-[var(--secondary-color)] shadow-sm">
-            <Play className="w-4 h-4" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold text-[var(--title-color)] font-bold-custom">
-              Tutorial Videos
+      {/* Page header */}
+      <section className="border-b border-slate-200 bg-white px-5 py-8 sm:px-8 sm:py-10">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--primary-color)]">
+              <BookOpen className="h-4 w-4" />
+              Your learning space
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              A little learning. A lot of progress.
             </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+              Choose a subject, explore past examination years, and learn one
+              lesson at a time.
+            </p>
           </div>
+          {!isLoading && (
+            <div className="flex gap-6 rounded-2xl border border-slate-100 bg-slate-50 px-6 py-4">
+              <div>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {subjects.length}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Subjects to explore
+                </p>
+              </div>
+              <div className="border-l border-slate-200 pl-6">
+                <p className="text-2xl font-semibold text-slate-900">
+                  {lessonCount}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">Video lessons</p>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
-      <section className="px-6 pt-4">
+      {/* User info bar */}
+      <section className="px-5 pt-5 sm:px-8">
         <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center text-white text-xs font-semibold font-medium-custom">
@@ -173,14 +199,17 @@ export default function Tutorials() {
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <div className="text-right">
               <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
                 Remaining Days
               </p>
               <p
-                className={`text-sm font-bold font-medium-custom ${summary.subscriptionExpiresIn <= 7 ? "text-[var(--failed-color)]" : "text-[var(--title-color)]"}`}
+                className={`text-sm font-bold font-medium-custom ${
+                  summary.subscriptionExpiresIn <= 7
+                    ? "text-[var(--failed-color)]"
+                    : "text-[var(--title-color)]"
+                }`}
               >
                 {summary.subscriptionExpiresIn} Day(s)
               </p>
@@ -203,32 +232,27 @@ export default function Tutorials() {
         </div>
       </section>
 
-      <section className="px-6 py-6 font-regular-custom">
-        <div className="bg-white rounded-xl shadow-md border border-[var(--border-color)] overflow-hidden">
-          <div className="px-6 py-4 bg-[var(--gray-color)] flex items-center justify-between border-b border-[var(--border-color)]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[var(--secondary-color)] animate-pulse"></span>
-              <h2 className="text-sm font-bold text-[var(--head-color)] uppercase tracking-wide font-bold-custom">
-                Tutorial Videos
+      {/* Subject list */}
+      <section className="px-5 py-6 font-regular-custom sm:px-8">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Your course library
               </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Pick a subject to see its lessons and examination years.
+              </p>
             </div>
-            <div className="text-xs text-[var(--text-secondary-color)]">
-              {subjects.length} Subject{subjects.length !== 1 ? "s" : ""}{" "}
-              Available
-            </div>
+            <ArrowUpRight className="h-5 w-5 shrink-0 text-slate-400" />
           </div>
 
           <SubjectList
             subjects={subjects}
             isLoading={isLoading}
-            onViewClasses={setSelectedSubject}
+            onViewContent={setSelectedSubject}
+            searchable
           />
-
-          <div className="px-6 py-4 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--gray-color)] rounded-b-xl">
-            <div className="text-xs font-medium text-[var(--text-secondary-color)] font-medium-custom">
-              Showing all {subjects.length} subjects
-            </div>
-          </div>
         </div>
       </section>
 
@@ -239,7 +263,9 @@ export default function Tutorials() {
           fetchDashboardSummary().then(setSummary).catch(console.error);
         }}
       />
+
       <ClassVideosModal
+        key={selectedSubject?.subjectId ?? "closed"}
         isOpen={!!selectedSubject}
         subject={selectedSubject}
         onClose={() => setSelectedSubject(null)}

@@ -7,6 +7,8 @@ import {
   UserEnrollment,
   UserSubscription,
   ClassVideo,
+  SubjectWithVideos,
+  YearGroup,
 } from "@/types/portal";
 import { useAuthStore } from "@/store/authStore";
 
@@ -141,48 +143,56 @@ const isActiveStatus = (source: RecordLike): boolean => {
 };
 
 const mapSubscription = (raw: unknown): UserSubscription => {
-  const payload = unwrapPayload(raw);
-  const source = Array.isArray(payload)
-    ? asRecord(payload[0])
-    : asRecord(payload);
-  const expiresAt = firstString(source, [
-    "subscriptionExpiresAt",
-    "expiresAt",
-    "expiryDate",
-    "dueDate",
-    "nextBillingDate",
-  ]);
+  // apiClient already unwraps the outer envelope — raw IS the data object:
+  // { subscriptionId, statusId, daysLeft, subscriptionStartDate, subscriptionEndDate, statusData: { statusId, statusName } }
+  const data = asRecord(raw);
 
-  const activeFlag = isActiveStatus(source);
-  const expiryTime = expiresAt ? new Date(expiresAt).getTime() : NaN;
-  const stillValid = Number.isNaN(expiryTime) || expiryTime > Date.now();
+  // statusData is nested: { statusId, statusName }
+  const statusData = asRecord(data.statusData);
+  const statusName = asString(statusData.statusName).toUpperCase();
+
+  // Active when statusId === 1 or statusName is ACTIVE
+  const statusId = asString(data.statusId ?? statusData.statusId);
+  const isActive =
+    statusId === "1" || statusName === "ACTIVE" || statusName === "ACTIVE!";
+
+  // daysLeft comes directly from the API
+  const daysLeft = asNumber(data.daysLeft, 0);
+
+  // Subscription end date
+  const expiresAt = asString(
+    data.subscriptionEndDate ?? data.expiresAt ?? data.expiryDate ?? "",
+  );
+
+  // departmentId / examId are NOT in the subscription response —
+  // they live in userEnrollment (persisted from signup). Pull them from the
+  // store so the rest of the app (tutorials, etc.) still gets them.
+  const storedEnrollment = useAuthStore.getState().userEnrollment;
 
   return {
-    isSubscriptionActive: activeFlag && stillValid,
+    isSubscriptionActive: isActive && daysLeft > 0,
     subscriptionExpiresAt: expiresAt || new Date().toISOString(),
-    subscriptionType: firstString(
-      source,
-      ["subscriptionType", "planName"],
-      "basic",
+    subscriptionType: "basic",
+    walletBalance: asNumber(data.walletBalance ?? data.balance, 0),
+    currency: asString(data.currency, "₦"),
+    departmentId: asString(
+      data.departmentId,
+      storedEnrollment?.departmentId ?? "",
     ),
-    walletBalance: firstNumber(
-      source,
-      ["walletBalance", "balance", "amount"],
-      0,
+    departmentName: asString(
+      data.departmentName ?? data.department,
+      storedEnrollment?.departmentName ?? "",
     ),
-    currency: firstString(source, ["currency"], "₦"),
-    departmentId: firstString(source, ["departmentId"]),
-    departmentName: firstString(source, ["departmentName", "department"]),
-    examId: firstString(source, ["examId"]),
-    examAbbreviation: firstString(source, [
-      "examAbbreviation",
-      "examAbbr",
-      "examTitle",
-      "exam",
-    ]),
+    examId: asString(data.examId, storedEnrollment?.examId ?? ""),
+    examAbbreviation: asString(
+      data.examAbbreviation ?? data.examAbbr,
+      storedEnrollment?.examAbbreviation ?? "",
+    ),
     lastPaymentDate:
-      firstString(source, ["lastPaymentDate", "createdAt"]) || undefined,
-    nextBillingDate: firstString(source, ["nextBillingDate"]) || undefined,
+      asString(data.subscriptionStartDate ?? data.createdAt) || undefined,
+    subscriptionId: asString(data.subscriptionId) || undefined,
+    daysLeft,
+    statusName,
   };
 };
 
@@ -206,10 +216,11 @@ const mapSubject = (
   item: RecordLike,
   enrollment?: UserEnrollment | UserSubscription | null,
 ): TutorialSubject => {
-  const id = firstString(item, ["subjectId", "id"]);
+  // API returns snake_case (subject_id, subject_name) — handle both
+  const id = firstString(item, ["subjectId", "subject_id", "id"]);
   return {
     id,
-    name: firstString(item, ["subjectName", "name"], "Subject"),
+    name: firstString(item, ["subjectName", "subject_name", "name"], "Subject"),
     departmentId: firstString(
       item,
       ["departmentId"],
@@ -275,18 +286,6 @@ const mapTutorialVideo = (item: RecordLike): TutorialVideo => {
   };
 };
 
-const buildYearLookup = (years: RecordLike[]): Map<string, string> => {
-  const lookup = new Map<string, string>();
-  years.forEach((year) => {
-    const yearId = firstString(year, ["yearId", "id"]);
-    const yearValue = firstString(year, ["yearValue", "year", "yearName"]);
-    if (yearId && yearValue) {
-      lookup.set(yearId, yearValue);
-    }
-  });
-  return lookup;
-};
-
 export const fetchUserSubscription = async (): Promise<UserSubscription> => {
   const token = useAuthStore.getState().token;
   if (!token) {
@@ -338,15 +337,8 @@ export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
   }
 
   const subscription = await fetchUserSubscription();
-  const expirationDate = new Date(subscription.subscriptionExpiresAt);
-  const daysUntilExpiration = Number.isNaN(expirationDate.getTime())
-    ? 0
-    : Math.max(
-        0,
-        Math.ceil(
-          (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-        ),
-      );
+  // Use daysLeft directly from API response — it's pre-calculated by the backend
+  const daysUntilExpiration = subscription.daysLeft ?? 0;
 
   return {
     subscriptionExpiresIn: daysUntilExpiration,
@@ -392,35 +384,112 @@ export const fetchTutorialsByDepartmentAndExam = async (
   examId: string,
   subjectId?: string,
 ): Promise<ClassVideo[]> => {
-  const [tutorialsResponse, yearsResponse] = await Promise.all([
-    apiClient.get<unknown>(
-      `/admin/tutorials/fetch-tutorials-by-department-and-exam?departmentId=${encodeURIComponent(departmentId)}&examId=${encodeURIComponent(examId)}`,
+  const subjects = await fetchSubjectsWithVideos(departmentId, examId);
+  const filtered = subjectId
+    ? subjects.filter((s) => s.subjectId === subjectId)
+    : subjects;
+  return filtered.flatMap((s) => s.yearGroups.flatMap((yg) => yg.videos));
+};
+
+export const fetchSubjectsWithVideos = async (
+  departmentId = "",
+  examId = "",
+): Promise<SubjectWithVideos[]> => {
+  // The student endpoint resolves enrollment from the authenticated user.
+  const raw = await apiClient.get<unknown>(
+    "/user/tutorials/fetch-tutorials-by-department-and-exam",
+  );
+
+  // apiClient already strips the outer envelope — raw IS the data array:
+  // [ { yearId, yearValue, subjects: [ { subjectId, subjectData, tutorials: [] } ] } ]
+  const years = asArray(raw);
+
+  // Build a map: subjectId → { meta, years: Map<yearId, YearGroup> }
+  const subjectMap = new Map<
+    string,
+    { name: string; yearMap: Map<string, YearGroup> }
+  >();
+
+  for (const yearItem of years) {
+    const yearRec = asRecord(yearItem);
+    const yearLabel = asString(yearRec.yearValue); // number → string, e.g. "2024"
+    const yearId = asString(yearRec.yearId);
+    if (!yearLabel || !yearId) continue;
+
+    const subjectEntries = Array.isArray(yearRec.subjects)
+      ? (yearRec.subjects as unknown[])
+      : [];
+
+    for (const subjectEntry of subjectEntries) {
+      const subRec = asRecord(subjectEntry);
+      const sid = asString(subRec.subjectId);
+      if (!sid) continue;
+
+      // Subject name lives in subjectData.subject_name
+      const subjectData = asRecord(subRec.subjectData);
+      const sName =
+        asString(subjectData.subject_name) ||
+        asString(subjectData.subjectName) ||
+        asString(subRec.subjectName) ||
+        sid;
+
+      if (!subjectMap.has(sid)) {
+        subjectMap.set(sid, { name: sName, yearMap: new Map() });
+      }
+      const entry = subjectMap.get(sid)!;
+
+      // Build videos for this year + subject
+      const tutorials = Array.isArray(subRec.tutorials)
+        ? (subRec.tutorials as unknown[])
+        : [];
+
+      const videos = tutorials.reduce<ClassVideo[]>((acc, t) => {
+        const tr = asRecord(t);
+        if (asString(tr.statusName).toUpperCase() === "INACTIVE") return acc;
+        const id = asString(tr.tutorialId ?? tr.id);
+        if (!id) return acc;
+        acc.push({
+          id,
+          title: asString(tr.tutorialTitle ?? tr.title, "Tutorial"),
+          year: yearLabel,
+          yearId,
+          subjectId: sid,
+          duration: asString(tr.tutorialDuration ?? tr.duration) || undefined,
+          description:
+            asString(tr.tutorialDescription ?? tr.description) || undefined,
+          thumbnailUrl:
+            asString(tr.tutorialPicture ?? tr.thumbnailUrl) || undefined,
+        });
+        return acc;
+      }, []);
+
+      // Keep every subject/year association, including years awaiting content.
+      if (!entry.yearMap.has(yearId)) {
+        entry.yearMap.set(yearId, { yearId, yearLabel, videos: [] });
+      }
+      entry.yearMap.get(yearId)!.videos.push(...videos);
+    }
+  }
+
+  const enrollment = useAuthStore.getState().userEnrollment;
+
+  return Array.from(subjectMap.entries()).map(([sid, { name, yearMap }]) => ({
+    subjectId: sid,
+    subjectName: name,
+    departmentId: enrollment?.departmentId ?? departmentId,
+    examId: enrollment?.examId ?? examId,
+    // Sort year groups newest-first
+    yearGroups: Array.from(yearMap.values()).sort((a, b) =>
+      b.yearLabel.localeCompare(a.yearLabel, undefined, { numeric: true }),
     ),
-    apiClient
-      .get<unknown>("/admin/years/fetch-year-by-departments")
-      .catch(() => []),
-  ]);
-
-  const yearLookup = buildYearLookup(asArray(yearsResponse));
-
-  return asArray(tutorialsResponse)
-    .filter((item) => {
-      if (!subjectId) return true;
-      const itemSubjectId = firstString(item, ["subjectId"]);
-      return !itemSubjectId || itemSubjectId === subjectId;
-    })
-    .map((item) => {
-      const yearId = firstString(item, ["yearId"]);
-      return mapClassVideo(item, yearLookup.get(yearId));
-    })
-    .filter((video) => video.id);
+  }));
 };
 
 export const fetchTutorialById = async (
   tutorialId: string,
 ): Promise<TutorialVideo | null> => {
   const data = await apiClient.get<unknown>(
-    `/admin/tutorials/fetch-tutorial-by-id?tutorialId=${encodeURIComponent(tutorialId)}`,
+    `/user/tutorials/fetch-tutorial-by-id?tutorialId=${encodeURIComponent(tutorialId)}`,
   );
 
   const payload = unwrapPayload(data);
@@ -439,13 +508,10 @@ export const fetchTutorialVideos = async (
   subjectId: string,
 ): Promise<ClassVideo[]> => {
   const enrollment = useAuthStore.getState().userEnrollment;
-  if (!enrollment?.departmentId || !enrollment?.examId) {
-    return [];
-  }
 
   return fetchTutorialsByDepartmentAndExam(
-    enrollment.departmentId,
-    enrollment.examId,
+    enrollment?.departmentId ?? "",
+    enrollment?.examId ?? "",
     subjectId,
   );
 };

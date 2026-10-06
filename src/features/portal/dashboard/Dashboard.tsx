@@ -1,4 +1,5 @@
 "use client";
+
 import { BarChart3 } from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
@@ -7,14 +8,16 @@ import { Button } from "@/components/form";
 import Link from "next/link";
 import {
   fetchDashboardSummary,
-  fetchTutorialSubjects,
+  fetchSubjectsWithVideos,
   fetchUserSubscription,
 } from "@/services/portal";
-import { DashboardSummary, TutorialSubject } from "@/types/portal";
+import { DashboardSummary, SubjectWithVideos } from "@/types/portal";
 import WalletLoadModal from "@/components/wallet/WalletLoadModal";
 import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 import ClassVideosModal from "@/components/tutorial/ClassVideosModal";
 import SubjectList from "@/features/portal/tutorials/SubjectList";
+
+const DASHBOARD_SUBJECT_LIMIT = 5;
 
 export default function Dashboard() {
   const { user, token } = useAuthStore();
@@ -25,14 +28,14 @@ export default function Dashboard() {
     subscriptionStatus: "expired",
     subscriptionType: "basic",
   });
-  const [subjects, setSubjects] = useState<TutorialSubject[]>([]);
+  const [subjects, setSubjects] = useState<SubjectWithVideos[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedSubject, setSelectedSubject] =
-    useState<TutorialSubject | null>(null);
+    useState<SubjectWithVideos | null>(null);
 
   useEffect(() => {
     setIsAuthenticated(!!token && !!user);
@@ -40,7 +43,6 @@ export default function Dashboard() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-
         if (!token || !user) {
           setIsLoading(false);
           return;
@@ -54,10 +56,10 @@ export default function Dashboard() {
           setSubjects([]);
           setSummary({
             subscriptionExpiresIn: 0,
-            walletBalance: subscription?.walletBalance || 0,
-            currency: subscription?.currency || "₦",
+            walletBalance: subscription?.walletBalance ?? 0,
+            currency: subscription?.currency ?? "₦",
             subscriptionStatus: "expired",
-            subscriptionType: subscription?.subscriptionType || "basic",
+            subscriptionType: subscription?.subscriptionType ?? "basic",
           });
           return;
         }
@@ -70,13 +72,7 @@ export default function Dashboard() {
             subscriptionStatus: "expired" as const,
             subscriptionType: subscription.subscriptionType,
           })),
-          fetchTutorialSubjects({
-            departmentId: subscription.departmentId,
-            departmentName: subscription.departmentName,
-            examId: subscription.examId,
-            examAbbreviation: subscription.examAbbreviation,
-            status: "active",
-          }).catch(() => []),
+          fetchSubjectsWithVideos().catch(() => []),
         ]);
 
         setSummary(sum);
@@ -87,6 +83,7 @@ export default function Dashboard() {
         setIsLoading(false);
       }
     };
+
     loadData();
   }, [token, user]);
 
@@ -98,8 +95,9 @@ export default function Dashboard() {
     ? `${user.first_name} ${user.last_name}`
     : "Student User";
   const userRole = user?.role || "STUDENT";
-  const visibleSubjects = subjects.slice(0, 5);
+  const visibleSubjects = subjects.slice(0, DASHBOARD_SUBJECT_LIMIT);
 
+  /* ── Not authenticated ─────────────────────────────────────────────── */
   if (!isAuthenticated) {
     return (
       <PortalWrapper>
@@ -125,10 +123,11 @@ export default function Dashboard() {
     );
   }
 
+  /* ── Authenticated but no active subscription ──────────────────────── */
   if (isAuthenticated && !isLoading && !hasActiveSubscription) {
     return (
       <PortalWrapper>
-        {/* User info bar — same as active subscription view */}
+        {/* User info bar */}
         <section className="px-6 pt-4">
           <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
             <div className="flex items-center gap-3">
@@ -147,7 +146,6 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-
             <div className="flex items-center gap-6">
               <div className="text-right">
                 <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
@@ -177,11 +175,9 @@ export default function Dashboard() {
 
         <section className="px-6 py-6">
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="mb-6">
-              <p className="text-[var(--secondary-color)] text-lg font-bold font-bold-custom uppercase tracking-wide">
-                SUBSCRIPTION EXPIRED! Please subscribe again to continue.
-              </p>
-            </div>
+            <p className="text-[var(--secondary-color)] text-lg font-bold font-bold-custom uppercase tracking-wide mb-6">
+              SUBSCRIPTION EXPIRED! Please subscribe again to continue.
+            </p>
             <Button
               text="Click here to subscribe"
               variant="primary"
@@ -204,8 +200,10 @@ export default function Dashboard() {
     );
   }
 
+  /* ── Active subscription ────────────────────────────────────────────── */
   return (
     <PortalWrapper>
+      {/* Page header */}
       <section className="px-6 py-6 bg-white border-b border-[var(--border-color)]">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-[var(--secondary-color-light)] rounded-xl text-[var(--secondary-color)] shadow-sm">
@@ -219,6 +217,7 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* User info bar */}
       <section className="px-6 pt-4">
         <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
           <div className="flex items-center gap-3">
@@ -237,14 +236,17 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-6">
             <div className="text-right">
               <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
                 Remaining Days
               </p>
               <p
-                className={`text-sm font-bold font-medium-custom ${summary.subscriptionExpiresIn <= 7 ? "text-[var(--failed-color)]" : "text-[var(--title-color)]"}`}
+                className={`text-sm font-bold font-medium-custom ${
+                  summary.subscriptionExpiresIn <= 7
+                    ? "text-[var(--failed-color)]"
+                    : "text-[var(--title-color)]"
+                }`}
               >
                 {summary.subscriptionExpiresIn} Day(s)
               </p>
@@ -267,13 +269,14 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Subject list (capped at 5) */}
       <section className="px-6 py-6 font-regular-custom">
         <div className="bg-white rounded-xl shadow-md border border-[var(--border-color)] overflow-hidden">
           <div className="px-6 py-4 bg-[var(--gray-color)] flex items-center justify-between border-b border-[var(--border-color)]">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[var(--secondary-color)] animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-[var(--secondary-color)] animate-pulse" />
               <h2 className="text-sm font-bold text-[var(--head-color)] uppercase tracking-wide font-bold-custom">
-                Tutorial Videos
+                Tutorial Subjects
               </h2>
             </div>
             <div className="text-xs text-[var(--text-secondary-color)]">
@@ -285,14 +288,14 @@ export default function Dashboard() {
           <SubjectList
             subjects={visibleSubjects}
             isLoading={isLoading}
-            onViewClasses={setSelectedSubject}
+            onViewContent={setSelectedSubject}
           />
 
           <div className="px-6 py-4 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--gray-color)] rounded-b-xl">
-            <div className="text-xs font-medium text-[var(--text-secondary-color)] font-medium-custom">
-              Showing {Math.min(5, subjects.length)} of {subjects.length}{" "}
-              subjects
-            </div>
+            <p className="text-xs font-medium text-[var(--text-secondary-color)] font-medium-custom">
+              Showing {Math.min(DASHBOARD_SUBJECT_LIMIT, subjects.length)} of{" "}
+              {subjects.length} subjects
+            </p>
             <Link href="/tutorials">
               <Button text="View All Tutorials" size="sm" variant="secondary" />
             </Link>
@@ -305,7 +308,9 @@ export default function Dashboard() {
         onClose={() => setShowWalletModal(false)}
         onSuccess={handleWalletLoadSuccess}
       />
+
       <ClassVideosModal
+        key={selectedSubject?.subjectId ?? "closed"}
         isOpen={!!selectedSubject}
         subject={selectedSubject}
         onClose={() => setSelectedSubject(null)}
