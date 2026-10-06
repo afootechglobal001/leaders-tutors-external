@@ -12,7 +12,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button: React.FC<ButtonProps> = ({
   text,
   frontIcon,
-  className,
+  className = "",
   backIcon,
   disabled,
   variant = "primary",
@@ -23,26 +23,26 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const isDisabled = disabled || isLoading;
   const baseClasses =
-    "inline-flex items-center justify-center gap-2 border p-5 font-medium-custom transition-all duration-200 hover:bg-[length:200%_100%] hover:bg-right";
+    "inline-flex items-center justify-center gap-2 border px-6 font-medium-custom tracking-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/25";
 
   const currentSize =
     size === "sm"
-      ? "h-[35px] text-sm gap-1.5 hover:gap-4 rounded-[7px]"
-      : "h-[55px] text-[15px] gap-2 hover:gap-5 rounded-[10px]"; // lg default
+      ? "h-[38px] text-sm gap-1.5 hover:gap-2.5 rounded-full px-4"
+      : "h-[52px] text-[15px] gap-2 hover:gap-3 rounded-full"; // lg default
 
-  // ✅ Backgrounds with darker hover states
+  // Brand gradient primary (indigo → orange) with glow; softer tonal variants elsewhere
   const buttonStyles =
     variant === "primary"
-      ? "border-transparent bg-gradient-to-r from-[var(--primary-hover-color)] to-[var(--secondary-hover-color)] bg-left text-white transition-[background-position,transform] duration-400 ease-in-out"
+      ? "border-transparent bg-linear-to-r from-primary-hover via-primary to-secondary-hover bg-[length:200%_100%] bg-left text-white shadow-glow hover:bg-right"
       : variant === "secondary"
-        ? "border-transparent bg-[var(--primary-color-light)] text-[var(--primary-color)] hover:bg-[var(--primary-color)] hover:text-white"
+        ? "border-transparent bg-primary-light text-primary hover:bg-primary hover:text-white"
         : variant === "outline"
-          ? "border-[var(--primary-color)] bg-white text-[var(--primary-color)] hover:bg-[var(--primary-color-light)] hover:text-[var(--primary-hover-color)]"
-          : "border-transparent bg-[var(--failed-color)] text-white hover:brightness-90";
+          ? "border-primary/30 bg-white text-primary hover:border-primary hover:bg-primary-light/60"
+          : "border-transparent bg-red-600 text-white shadow-[0_8px_20px_rgba(220,38,38,0.28)] hover:bg-red-700";
 
   const disabledStyles = isDisabled
     ? "opacity-50 cursor-not-allowed pointer-events-none"
-    : "cursor-pointer transform transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.97]";
+    : "cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]";
 
   if (isLoading) {
     return (
@@ -50,9 +50,9 @@ export const Button: React.FC<ButtonProps> = ({
         disabled
         className={`flex justify-center items-center  ${currentSize}  ${
           fullWidth ? "w-full" : ""
-        } bg-gray-200 cursor-not-allowed`}
+        } bg-primary-light cursor-not-allowed rounded-full`}
       >
-        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
       </button>
     );
   }

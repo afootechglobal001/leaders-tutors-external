@@ -20,24 +20,27 @@ export const PageHeader = ({
 }: PageHeaderProps) => {
   return (
     <section
-      className={`relative overflow-hidden bg-[#fffbf0] backdrop-blur-sm border-b border-slate-200/60 ${className} animate-fade-down shadow-[0px_0px_40px_rgba(0,0,0,0.075)]`}
+      className={`relative overflow-hidden bg-brand-gradient-soft border-b border-primary/10 ${className} animate-fade-down`}
     >
-      <div className="relative px-8 py-6">
+      {/* decorative brand blobs */}
+      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-secondary/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-10 -bottom-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative px-4 py-5 md:px-8 md:py-7">
         {addNavigation}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Left Side - Title and Description */}
           <div className="flex items-start gap-4">
             <div className="relative">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-(--primary-color)  to-(--secondary-color) shadow-xl">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-glow">
                 {icon}
               </div>
             </div>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl  tracking-normal font-bold bg-linear-to-r from-slate-900 via-amber-900 to-orange-900 bg-clip-text text-transparent mb-1 leading-tight">
+              <h1 className="mb-1 text-2xl font-bold tracking-tight leading-tight text-brand-gradient">
                 {title}
               </h1>
-              <p className="text-base text-gray-500 tracking-tight max-w-2xl">
+              <p className="max-w-2xl text-sm md:text-base text-muted tracking-tight">
                 {description}
               </p>
             </div>

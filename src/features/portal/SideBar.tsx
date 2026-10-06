@@ -7,12 +7,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const linkClasses = (active: boolean) =>
+  `group relative whitespace-nowrap flex items-center justify-center md:justify-start gap-3 cursor-pointer px-2 md:px-4 py-3 rounded-xl text-sm font-medium-custom transition-all duration-200 ${
+    active
+      ? "bg-brand-gradient text-white shadow-glow"
+      : "text-slate-600 hover:bg-primary-light/70 hover:text-primary"
+  }`;
+
+const iconClasses = (active: boolean) =>
+  `inline-block shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+    active ? "text-white" : "text-primary"
+  }`;
+
 export const SideBar = () => {
   const pathname = usePathname();
 
   return (
-    <section className="fixed w-16 md:w-50 h-full border-r border-slate-100 bg-white left-0 top-0 flex flex-col justify-between items-center">
-      <div className="w-full p-2 md:p-4 flex flex-col gap-8 md:gap-12 items-start">
+    <section className="fixed w-16 md:w-56 h-full border-r border-primary/10 bg-white left-0 top-0 flex flex-col justify-between items-center">
+      <div className="w-full p-2 md:p-4 flex flex-col gap-8 md:gap-10 items-start">
         <div className="w-full md:w-35 py-3 md:py-0">
           <Image
             src="/body-pix/logo.png"
@@ -24,51 +36,46 @@ export const SideBar = () => {
           />
         </div>
         <nav className="w-full">
-          <ul className="flex flex-col gap-3">
-            {SIDEBAR_TOP_LINKS.map((link) => (
-              <Link
-                href={link.href}
-                key={link.name}
-                title={link.name}
-                aria-current={pathname === link.href ? "page" : undefined}
-              >
-                <li
-                  className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-center md:justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-2 md:px-4 py-3 rounded-lg ${
-                    pathname === link.href ? "bg-gray-500/10" : ""
-                  }`}
+          <p className="mb-2 hidden px-4 text-[11px] uppercase tracking-widest text-slate-400 md:block">
+            Menu
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {SIDEBAR_TOP_LINKS.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  href={link.href}
+                  key={link.name}
+                  title={link.name}
+                  aria-current={active ? "page" : undefined}
                 >
+                  <li className={linkClasses(active)}>
+                    {link.icon && (
+                      <link.icon size={18} className={iconClasses(active)} />
+                    )}
+                    <span className="sr-only md:not-sr-only">{link.name}</span>
+                  </li>
+                </Link>
+              );
+            })}
+          </ul>
+        </nav>
+      </div>
+      <nav className="w-full p-2 md:p-4 border-t border-slate-100">
+        <ul className="flex flex-col gap-1.5">
+          {SIDEBAR_BOTTOM_LINKS.map((link) => {
+            const active = pathname === link.href;
+            return (
+              <Link href={link.href} key={link.name} title={link.name}>
+                <li className={linkClasses(active)}>
                   {link.icon && (
-                    <link.icon
-                      size={16}
-                      className="inline-block shrink-0 md:mr-1 text-(--primary-color)"
-                    />
+                    <link.icon size={18} className={iconClasses(active)} />
                   )}
                   <span className="sr-only md:not-sr-only">{link.name}</span>
                 </li>
               </Link>
-            ))}
-          </ul>
-        </nav>
-      </div>
-      <nav className="w-full p-2 md:p-4">
-        <ul className="flex flex-col gap-3">
-          {SIDEBAR_BOTTOM_LINKS.map((link) => (
-            <Link href={link.href} key={link.name} title={link.name}>
-              <li
-                className={`transition-colors duration-300 text-(--primary-hover-color) whitespace-nowrap flex items-center justify-center md:justify-start gap-1 cursor-pointer hover:bg-gray-500/10 px-2 md:px-4 py-3 rounded-lg ${
-                  pathname === link.href ? "bg-gray-500/10" : ""
-                }`}
-              >
-                {link.icon && (
-                  <link.icon
-                    size={16}
-                    className="inline-block shrink-0 md:mr-1 text-(--primary-color)"
-                  />
-                )}
-                <span className="sr-only md:not-sr-only">{link.name}</span>
-              </li>
-            </Link>
-          ))}
+            );
+          })}
         </ul>
       </nav>
     </section>

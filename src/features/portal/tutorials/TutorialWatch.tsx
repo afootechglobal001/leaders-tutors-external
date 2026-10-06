@@ -1,14 +1,24 @@
 "use client";
-import { ArrowLeft, Play, Clock, BookOpen } from "lucide-react";
+import {
+  ArrowLeft,
+  Play,
+  Clock,
+  BookOpen,
+  CalendarDays,
+  GraduationCap,
+  Lock,
+} from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/form";
 import Link from "next/link";
+import DOMPurify from "dompurify";
 import { useSearchParams } from "next/navigation";
 import { fetchTutorialById, fetchUserSubscription } from "@/services/portal";
 import { TutorialVideo } from "@/types/portal";
 import SubscriptionModal from "@/components/subscription/SubscriptionModal";
+import { Avatar, Badge, Card } from "@/components/ui";
 
 export default function TutorialWatch() {
   const { user } = useAuthStore();
@@ -54,15 +64,15 @@ export default function TutorialWatch() {
   if (!hasActiveSubscription && !isLoading) {
     return (
       <PortalWrapper>
-        <section className="px-6 py-20">
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-8 h-8 text-red-500" />
+        <section className="px-4 md:px-8 py-16">
+          <Card className="mx-auto max-w-lg p-10 text-center animate-fade-up">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-glow">
+              <Lock className="h-7 w-7" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Subscription Required
+            <h2 className="mb-2 text-xl font-bold tracking-tight text-ink">
+              Unlock this tutorial
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-muted">
               You need an active subscription to watch tutorial videos.
             </p>
             <Button
@@ -70,7 +80,7 @@ export default function TutorialWatch() {
               className="px-8"
               onClick={() => setShowSubscriptionModal(true)}
             />
-          </div>
+          </Card>
           <SubscriptionModal
             isOpen={showSubscriptionModal}
             onClose={() => setShowSubscriptionModal(false)}
@@ -83,11 +93,13 @@ export default function TutorialWatch() {
   if (isLoading) {
     return (
       <PortalWrapper>
-        <section className="px-6 py-20">
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading video...</p>
+        <section className="grid gap-6 px-4 py-6 md:px-8 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <div className="skeleton aspect-video w-full rounded-2xl" />
+            <div className="skeleton h-6 w-2/3 rounded-lg" />
+            <div className="skeleton h-4 w-1/3 rounded-lg" />
           </div>
+          <div className="skeleton h-64 rounded-2xl" />
         </section>
       </PortalWrapper>
     );
@@ -96,15 +108,15 @@ export default function TutorialWatch() {
   if (!videoData) {
     return (
       <PortalWrapper>
-        <section className="px-6 py-20">
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-8 h-8 text-gray-400" />
+        <section className="px-4 md:px-8 py-16">
+          <Card className="mx-auto max-w-lg p-10 text-center animate-fade-up">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-light text-primary">
+              <Play className="h-7 w-7" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <h2 className="mb-2 text-xl font-bold tracking-tight text-ink">
               Video Not Found
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-muted">
               The requested tutorial video could not be found.
             </p>
             <Link href="/tutorials">
@@ -114,116 +126,162 @@ export default function TutorialWatch() {
                 className="px-8"
               />
             </Link>
-          </div>
+          </Card>
         </section>
       </PortalWrapper>
     );
   }
 
+  const examLabel = `${videoData.year ?? ""} ${videoData.exam ?? ""}`.trim();
+
   return (
     <PortalWrapper>
-      <section className="px-6 py-4 bg-white border-b border-gray-100">
-        <div className="flex items-center gap-4">
-          <Link href="/tutorials">
-            <Button
-              text=""
-              variant="secondary"
-              size="sm"
-              className="p-2 border-gray-200 hover:border-blue-500"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
+      {/* Hero header */}
+      <section className="relative overflow-hidden border-b border-primary/10 bg-brand-gradient-soft">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-secondary/15 blur-3xl" />
+        <div className="relative flex items-center gap-4 px-4 py-5 md:px-8">
+          <Link
+            href="/tutorials"
+            aria-label="Back to tutorials"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-card transition hover:-translate-x-0.5 hover:bg-primary-light"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Link>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-widest text-muted">
+              Now watching
+            </p>
+            <h1 className="truncate text-xl font-bold tracking-tight text-brand-gradient md:text-2xl">
               {videoData.title}
             </h1>
-            <p className="text-sm text-gray-500">
-              {videoData.subject} • {videoData.year} {videoData.exam}
-            </p>
           </div>
         </div>
       </section>
 
-      <section className="px-6 py-6">
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-          <div className="relative bg-black aspect-video">
-            {videoData.videoUrl ? (
-              <video
-                className="w-full h-full"
-                controls
-                poster={videoData.thumbnailUrl}
-              >
-                <source src={videoData.videoUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white">
-                Video URL is not available for this tutorial.
-              </div>
-            )}
+      <section className="grid gap-6 px-4 py-6 md:px-8 lg:grid-cols-3 animate-fade-up">
+        {/* Player + details */}
+        <div className="space-y-6 lg:col-span-2">
+          <div className="overflow-hidden rounded-2xl bg-black shadow-pop ring-1 ring-primary/20">
+            <div className="relative aspect-video">
+              {videoData.videoUrl ? (
+                <video
+                  className="h-full w-full"
+                  controls
+                  poster={videoData.thumbnailUrl}
+                >
+                  <source src={videoData.videoUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-white/80">
+                  Video URL is not available for this tutorial.
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="p-6">
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
-                  {videoData.title}
-                </h2>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  {videoData.duration ? (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{videoData.duration}</span>
-                    </div>
-                  ) : null}
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="w-4 h-4" />
-                    <span>{videoData.subject || "Tutorial"}</span>
-                  </div>
-                  <span>•</span>
-                  <span>
-                    {videoData.year} {videoData.exam}
-                  </span>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-                  Student
-                </div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {userName}
-                </div>
-              </div>
+          <Card className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="brand">{videoData.subject || "Tutorial"}</Badge>
+              {examLabel && <Badge tone="warning">{examLabel}</Badge>}
+              {videoData.duration ? (
+                <Badge tone="neutral">
+                  <Clock className="h-3 w-3" /> {videoData.duration}
+                </Badge>
+              ) : null}
             </div>
-
+            <h2 className="text-xl font-bold tracking-tight text-ink">
+              {videoData.title}
+            </h2>
             {videoData.description ? (
-              <div className="border-t border-gray-100 pt-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              <div className="border-t border-slate-100 pt-4">
+                <h3 className="mb-2 text-sm font-semibold text-ink">
                   About this tutorial
                 </h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {videoData.description}
-                </p>
+                <div
+                  className="text-sm leading-relaxed text-muted [&_a]:text-primary [&_a]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_ol]:pl-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-1"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.isSupported
+                      ? DOMPurify.sanitize(videoData.description)
+                      : "",
+                  }}
+                />
               </div>
             ) : null}
-          </div>
+          </Card>
         </div>
-      </section>
 
-      <section className="px-6 pb-6">
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Continue Learning
-          </h3>
-          <Link href="/tutorials">
-            <Button
-              text="Back to All Tutorials"
-              variant="secondary"
-              className="px-6"
-            />
-          </Link>
-        </div>
+        {/* Side panel */}
+        <aside className="space-y-6">
+          <Card className="space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              Tutorial details
+            </h3>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-light text-primary">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-xs text-muted">Subject</p>
+                  <p className="font-medium-custom text-ink">
+                    {videoData.subject || "Tutorial"}
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-secondary-hover">
+                  <GraduationCap className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-xs text-muted">Exam</p>
+                  <p className="font-medium-custom text-ink">
+                    {videoData.exam || "-"}
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-light text-primary">
+                  <CalendarDays className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-xs text-muted">Year</p>
+                  <p className="font-medium-custom text-ink">
+                    {videoData.year || "-"}
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </Card>
+
+          <Card className="flex items-center gap-3">
+            <Avatar name={userName} />
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wider text-muted">
+                Student
+              </p>
+              <p className="truncate text-sm font-semibold text-ink">
+                {userName}
+              </p>
+            </div>
+          </Card>
+
+          <Card
+            className="border-0 text-white shadow-glow"
+            style={{ background: "var(--gradient-brand)" }}
+          >
+            <h3 className="mb-1 text-lg font-bold">Continue Learning</h3>
+            <p className="mb-4 text-sm text-white/80">
+              Explore more tutorials to keep your momentum going.
+            </p>
+            <Link
+              href="/tutorials"
+              className="inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-medium-custom text-primary transition hover:bg-primary-light"
+            >
+              Browse all tutorials
+            </Link>
+          </Card>
+        </aside>
       </section>
     </PortalWrapper>
   );

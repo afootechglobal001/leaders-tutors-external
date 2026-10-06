@@ -1,314 +1,341 @@
-"use client";
+﻿"use client";
 
-import { BarChart3 } from "lucide-react";
-import { PortalWrapper } from "../PortalWrapper";
-import { useAuthStore } from "@/store/authStore";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/form";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  fetchDashboardSummary,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Wallet,
+  Play,
+  Settings2,
+  Receipt,
+  AlertCircle,
+  RefreshCw,
+  GraduationCap,
+} from "lucide-react";
+import { PortalWrapper } from "../PortalWrapper";
+import { useAuthStore } from "@/store/authStore";
+import {
   fetchSubjectsWithVideos,
   fetchUserSubscription,
 } from "@/services/portal";
-import { DashboardSummary, SubjectWithVideos } from "@/types/portal";
+import { SubjectWithVideos, UserSubscription } from "@/types/portal";
 import WalletLoadModal from "@/components/wallet/WalletLoadModal";
-import SubscriptionModal from "@/components/subscription/SubscriptionModal";
 import ClassVideosModal from "@/components/tutorial/ClassVideosModal";
 import SubjectList from "@/features/portal/tutorials/SubjectList";
 
-const DASHBOARD_SUBJECT_LIMIT = 5;
+const actionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--primary-color)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover-color)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--primary-color)]";
 
 export default function Dashboard() {
-  const { user, token } = useAuthStore();
-  const [summary, setSummary] = useState<DashboardSummary>({
-    subscriptionExpiresIn: 0,
-    walletBalance: 0,
-    currency: "₦",
-    subscriptionStatus: "expired",
-    subscriptionType: "basic",
-  });
+  const { user, token, userEnrollment } = useAuthStore();
+  const [subscription, setSubscription] = useState<UserSubscription | null>(
+    null,
+  );
   const [subjects, setSubjects] = useState<SubjectWithVideos[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedSubject, setSelectedSubject] =
     useState<SubjectWithVideos | null>(null);
 
   useEffect(() => {
-    setIsAuthenticated(!!token && !!user);
-
-    const loadData = async () => {
+    let cancelled = false;
+    const load = async () => {
+      if (!token || !user) return;
+      setIsLoading(true);
+      setError("");
+      setSubjects([]);
+      setSubscription(null);
       try {
-        setIsLoading(true);
-        if (!token || !user) {
-          setIsLoading(false);
-          return;
+        const current = await fetchUserSubscription();
+        if (cancelled) return;
+        setSubscription(current);
+        if (current.isSubscriptionActive) {
+          const courses = await fetchSubjectsWithVideos();
+          if (!cancelled) setSubjects(courses);
         }
-
-        const subscription = await fetchUserSubscription().catch(() => null);
-        const isActive = !!subscription?.isSubscriptionActive;
-        setHasActiveSubscription(isActive);
-
-        if (!subscription || !isActive) {
-          setSubjects([]);
-          setSummary({
-            subscriptionExpiresIn: 0,
-            walletBalance: subscription?.walletBalance ?? 0,
-            currency: subscription?.currency ?? "₦",
-            subscriptionStatus: "expired",
-            subscriptionType: subscription?.subscriptionType ?? "basic",
-          });
-          return;
-        }
-
-        const [sum, subs] = await Promise.all([
-          fetchDashboardSummary().catch(() => ({
-            subscriptionExpiresIn: 0,
-            walletBalance: subscription.walletBalance,
-            currency: subscription.currency,
-            subscriptionStatus: "expired" as const,
-            subscriptionType: subscription.subscriptionType,
-          })),
-          fetchSubjectsWithVideos().catch(() => []),
-        ]);
-
-        setSummary(sum);
-        setSubjects(subs);
-      } catch (error) {
-        console.error("Dashboard data load error:", error);
+      } catch {
+        if (!cancelled)
+          setError("We couldn't load your dashboard. Please try again.");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user, retry]);
 
-    loadData();
-  }, [token, user]);
-
-  const handleWalletLoadSuccess = () => {
-    fetchDashboardSummary().then(setSummary).catch(console.error);
-  };
-
-  const userName = user
-    ? `${user.first_name} ${user.last_name}`
-    : "Student User";
-  const userRole = user?.role || "STUDENT";
-  const visibleSubjects = subjects.slice(0, DASHBOARD_SUBJECT_LIMIT);
-
-  /* ── Not authenticated ─────────────────────────────────────────────── */
-  if (!isAuthenticated) {
+  if (!user || !token)
     return (
       <PortalWrapper>
-        <section className="px-6 py-20">
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="mb-6">
-              <div className="p-4 bg-[var(--primary-color-light)] rounded-full text-[var(--primary-color)] mb-4 inline-block">
-                <BarChart3 className="w-12 h-12" />
-              </div>
-              <h2 className="text-2xl font-bold text-[var(--title-color)] font-bold-custom mb-2">
-                Welcome to Leaders Tutors
-              </h2>
-              <p className="text-[var(--text-color)] text-lg mb-6">
-                Please log in to access your dashboard and tutorial materials.
-              </p>
-            </div>
-            <Link href="/">
-              <Button text="Go to Login" variant="primary" className="px-8" />
-            </Link>
-          </div>
-        </section>
+        <div className="mx-auto max-w-lg px-6 py-20 text-center">
+          <BookOpen className="mx-auto mb-5 h-10 w-10 text-[var(--primary-color)]" />
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Your learning starts here
+          </h1>
+          <p className="my-4 text-sm leading-6 text-slate-500">
+            Sign in to explore your courses and manage your account.
+          </p>
+          <Link href="/" className={actionClass}>
+            Sign in
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </PortalWrapper>
     );
-  }
 
-  /* ── Authenticated but no active subscription ──────────────────────── */
-  if (isAuthenticated && !isLoading && !hasActiveSubscription) {
-    return (
-      <PortalWrapper>
-        {/* User info bar */}
-        <section className="px-6 pt-4">
-          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center text-white text-xs font-semibold font-medium-custom">
-                {userName
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-[var(--title-color)] capitalize font-medium-custom">
-                  {userName.toLowerCase()}
-                </h2>
-                <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-tighter">
-                  {userRole}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
-                  Remaining Days
-                </p>
-                <p className="text-sm font-bold text-[var(--failed-color)] font-medium-custom">
-                  0 Day(s)
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
-                  Wallet Balance
-                </p>
-                <p className="text-sm font-bold text-[var(--text-green)] font-medium-custom">
-                  {summary.currency}
-                  {summary.walletBalance.toLocaleString()}
-                </p>
-              </div>
-              <Button
-                text="Load Wallet"
-                size="sm"
-                onClick={() => setShowWalletModal(true)}
-              />
-            </div>
-          </div>
-        </section>
+  const active = subscription?.isSubscriptionActive;
+  const lessons = subjects.reduce(
+    (sum, subject) =>
+      sum +
+      subject.yearGroups.reduce((total, year) => total + year.videos.length, 0),
+    0,
+  );
+  const exam = user.examAbbreviation || userEnrollment?.examAbbreviation;
+  const department = user.departmentName || userEnrollment?.departmentName;
+  const stats = [
+    {
+      label: "Subscription",
+      value: isLoading
+        ? "Loading…"
+        : subscription
+          ? active
+            ? `${subscription.daysLeft ?? 0} days left`
+            : "Inactive"
+          : "Unavailable",
+      note: active
+        ? "Your learning access is active"
+        : "Manage your learning access",
+      icon: CalendarDays,
+      color: "bg-indigo-50 text-indigo-700",
+      href: "/subscriptions",
+      link: "View subscription",
+    },
+    {
+      label: "Wallet balance",
+      value: isLoading
+        ? "—"
+        : subscription
+          ? `${subscription.currency}${subscription.walletBalance.toLocaleString()}`
+          : "—",
+      note: "Available in your wallet",
+      icon: Wallet,
+      color: "bg-emerald-50 text-emerald-700",
+      href: "/transactions",
+      link: "Payment history",
+    },
+    {
+      label: "Your course library",
+      value: isLoading
+        ? "—"
+        : error
+          ? "Unavailable"
+          : `${subjects.length} subjects`,
+      note: error
+        ? "Retry to load your courses"
+        : `${lessons} video lesson${lessons !== 1 ? "s" : ""} to explore`,
+      icon: BookOpen,
+      color: "bg-amber-50 text-amber-700",
+      href: "/tutorials",
+      link: "Explore tutorials",
+    },
+  ];
 
-        <section className="px-6 py-6">
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-[var(--secondary-color)] text-lg font-bold font-bold-custom uppercase tracking-wide mb-6">
-              SUBSCRIPTION EXPIRED! Please subscribe again to continue.
-            </p>
-            <Button
-              text="Click here to subscribe"
-              variant="primary"
-              className="px-8"
-              onClick={() => setShowSubscriptionModal(true)}
-            />
-          </div>
-          <SubscriptionModal
-            isOpen={showSubscriptionModal}
-            onClose={() => setShowSubscriptionModal(false)}
-          />
-        </section>
-
-        <WalletLoadModal
-          isOpen={showWalletModal}
-          onClose={() => setShowWalletModal(false)}
-          onSuccess={handleWalletLoadSuccess}
-        />
-      </PortalWrapper>
-    );
-  }
-
-  /* ── Active subscription ────────────────────────────────────────────── */
   return (
     <PortalWrapper>
-      {/* Page header */}
-      <section className="px-6 py-6 bg-white border-b border-[var(--border-color)]">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-[var(--secondary-color-light)] rounded-xl text-[var(--secondary-color)] shadow-sm">
-            <BarChart3 className="w-8 h-8" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold text-[var(--title-color)] font-bold-custom">
-              Dashboard
-            </h1>
-          </div>
-        </div>
-      </section>
-
-      {/* User info bar */}
-      <section className="px-6 pt-4">
-        <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center text-white text-xs font-semibold font-medium-custom">
-              {userName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--title-color)] capitalize font-medium-custom">
-                {userName.toLowerCase()}
-              </h2>
-              <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-tighter">
-                {userRole}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
-                Remaining Days
-              </p>
-              <p
-                className={`text-sm font-bold font-medium-custom ${
-                  summary.subscriptionExpiresIn <= 7
-                    ? "text-[var(--failed-color)]"
-                    : "text-[var(--title-color)]"
-                }`}
-              >
-                {summary.subscriptionExpiresIn} Day(s)
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
-                Wallet Balance
-              </p>
-              <p className="text-sm font-bold text-[var(--text-green)] font-medium-custom">
-                {summary.currency}
-                {summary.walletBalance.toLocaleString()}
-              </p>
-            </div>
-            <Button
-              text="Load Wallet"
-              size="sm"
-              onClick={() => setShowWalletModal(true)}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Subject list (capped at 5) */}
-      <section className="px-6 py-6 font-regular-custom">
-        <div className="bg-white rounded-xl shadow-md border border-[var(--border-color)] overflow-hidden">
-          <div className="px-6 py-4 bg-[var(--gray-color)] flex items-center justify-between border-b border-[var(--border-color)]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[var(--secondary-color)] animate-pulse" />
-              <h2 className="text-sm font-bold text-[var(--head-color)] uppercase tracking-wide font-bold-custom">
-                Tutorial Subjects
-              </h2>
-            </div>
-            <div className="text-xs text-[var(--text-secondary-color)]">
-              {subjects.length} Subject{subjects.length !== 1 ? "s" : ""}{" "}
-              Available
-            </div>
-          </div>
-
-          <SubjectList
-            subjects={visibleSubjects}
-            isLoading={isLoading}
-            onViewContent={setSelectedSubject}
-          />
-
-          <div className="px-6 py-4 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--gray-color)] rounded-b-xl">
-            <p className="text-xs font-medium text-[var(--text-secondary-color)] font-medium-custom">
-              Showing {Math.min(DASHBOARD_SUBJECT_LIMIT, subjects.length)} of{" "}
-              {subjects.length} subjects
+      <div className="mx-auto max-w-7xl px-5 py-7 sm:px-8 sm:py-9">
+        <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--primary-color)]">
+              Your dashboard
             </p>
-            <Link href="/tutorials">
-              <Button text="View All Tutorials" size="sm" variant="secondary" />
-            </Link>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Welcome back, {user.first_name || "learner"}.
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Everything you need for your next learning session.
+            </p>
           </div>
+          <Link href="/tutorials" className={actionClass}>
+            <Play className="h-4 w-4" />
+            Explore lessons
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </header>
+        {error && (
+          <div
+            role="alert"
+            className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+          >
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setRetry((value) => value + 1)}
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 font-semibold hover:bg-amber-100 focus-visible:outline-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try again
+            </button>
+          </div>
+        )}
+        <section
+          className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          aria-label="Account overview"
+        >
+          {stats.map((stat) => (
+            <article
+              key={stat.label}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <p className="text-sm text-slate-500">{stat.label}</p>
+                <span className={`rounded-xl p-2.5 ${stat.color}`}>
+                  <stat.icon className="h-5 w-5" />
+                </span>
+              </div>
+              <p
+                className="text-2xl font-semibold tracking-tight text-slate-900"
+                aria-live="polite"
+              >
+                {stat.value}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {stat.note}
+              </p>
+              <Link
+                href={stat.href}
+                className="mt-5 inline-flex min-h-8 items-center gap-2 text-xs font-semibold text-[var(--primary-color)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                {stat.link}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </article>
+          ))}
+        </section>
+        {!isLoading && subscription && !active && (
+          <section className="mb-7 flex flex-col gap-5 rounded-2xl border border-indigo-100 bg-indigo-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-900">
+                Ready for your next lesson?
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Activate your subscription to access your course content.
+              </p>
+            </div>
+            <Link href="/subscriptions" className={`${actionClass} shrink-0`}>
+              Manage subscription
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </section>
+        )}
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Your courses
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Choose a subject and make your next step count.
+                </p>
+              </div>
+              <Link
+                href="/tutorials"
+                className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-[var(--primary-color)] hover:underline focus-visible:outline-2"
+              >
+                View all
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <SubjectList
+              subjects={subjects.slice(0, 5)}
+              isLoading={isLoading}
+              onViewContent={setSelectedSubject}
+              emptyMessage={
+                error
+                  ? "Your courses couldn't be loaded. Use the retry button above."
+                  : active
+                    ? "New course content will appear here when available."
+                    : "Your courses will be available with an active subscription."
+              }
+            />
+            {subjects.length > 5 && (
+              <p className="border-t border-slate-100 px-6 py-4 text-xs text-slate-500">
+                Showing 5 of {subjects.length} subjects. Explore tutorials to
+                view the full library.
+              </p>
+            )}
+          </section>
+          <aside className="space-y-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 inline-flex rounded-xl bg-indigo-50 p-2.5 text-[var(--primary-color)]">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <h2 className="font-semibold text-slate-900">Your examination</h2>
+              <p className="mt-3 text-xl font-semibold text-[var(--primary-color)]">
+                {exam || "Your enrollment"}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {department || "View your account details in settings."}
+              </p>
+              <Link
+                href="/settings"
+                className="mt-5 inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-[var(--primary-color)] focus-visible:outline-2"
+              >
+                Account details
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-3 px-1 font-semibold text-slate-900">
+                Quick actions
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowWalletModal(true)}
+                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-700 hover:bg-slate-50 focus-visible:outline-2"
+              >
+                <Wallet className="h-4 w-4 text-slate-400" />
+                Add to wallet
+                <ArrowRight className="ml-auto h-4 w-4 text-slate-400" />
+              </button>
+              {[
+                {
+                  href: "/transactions",
+                  text: "Payment history",
+                  icon: Receipt,
+                },
+                {
+                  href: "/settings",
+                  text: "Account settings",
+                  icon: Settings2,
+                },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm text-slate-700 hover:bg-slate-50 focus-visible:outline-2"
+                >
+                  <item.icon className="h-4 w-4 text-slate-400" />
+                  {item.text}
+                  <ArrowRight className="ml-auto h-4 w-4 text-slate-400" />
+                </Link>
+              ))}
+            </section>
+          </aside>
         </div>
-      </section>
-
+      </div>
       <WalletLoadModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}
-        onSuccess={handleWalletLoadSuccess}
+        onSuccess={() => setRetry((value) => value + 1)}
       />
-
       <ClassVideosModal
         key={selectedSubject?.subjectId ?? "closed"}
         isOpen={!!selectedSubject}
