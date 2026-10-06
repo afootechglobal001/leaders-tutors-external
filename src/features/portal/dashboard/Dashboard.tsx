@@ -126,7 +126,7 @@ export default function Dashboard() {
       note: "Available in your wallet",
       icon: Wallet,
       color: "bg-emerald-50 text-emerald-700",
-      href: "/transactions",
+      href: "/subscriptions",
       link: "Payment history",
     },
     {
@@ -307,7 +307,7 @@ export default function Dashboard() {
               </button>
               {[
                 {
-                  href: "/transactions",
+                  href: "/subscriptions",
                   text: "Payment history",
                   icon: Receipt,
                 },

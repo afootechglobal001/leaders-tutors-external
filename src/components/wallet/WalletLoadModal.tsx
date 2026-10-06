@@ -2,7 +2,17 @@
 import { useState } from "react";
 import { X, CreditCard, Wallet } from "lucide-react";
 import { Button, TextInput } from "@/components/form";
-import { initiateWalletLoad } from "@/services/payment";
+import {
+  initiateWalletLoad,
+  confirmWalletLoadSuccess,
+  cancelWalletLoad,
+} from "@/services/payment";
+import {
+  loadPaystackScript,
+  initializePaystackPayment,
+  convertToKobo,
+} from "@/services/paystack";
+import { useAuthStore } from "@/store/authStore";
 
 interface WalletLoadModalProps {
   isOpen: boolean;
@@ -15,6 +25,7 @@ export default function WalletLoadModal({
   onClose,
   onSuccess,
 }: WalletLoadModalProps) {
+  const user = useAuthStore((state) => state.user);
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,25 +39,59 @@ export default function WalletLoadModal({
       return;
     }
 
+    const publicKeyFallback = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
+    const email = user?.email;
+    if (!email) {
+      setError("We couldn't find your email address. Please sign in again.");
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError("");
 
-      const paymentData = await initiateWalletLoad(numAmount);
-
-      // In a real app, you would redirect to the payment URL
-      // For now, we'll just simulate success
-      if (paymentData.paymentUrl) {
-        // Simulate payment success after 2 seconds
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-          setAmount("");
-        }, 2000);
+      const payment = await initiateWalletLoad(numAmount);
+      const publicKey = payment.paystackPaymentKey || publicKeyFallback;
+      if (!publicKey) {
+        await cancelWalletLoad(payment.transactionId);
+        setError("Paystack is not configured for this environment.");
+        setIsLoading(false);
+        return;
       }
+
+      await loadPaystackScript();
+      initializePaystackPayment({
+        publicKey,
+        email,
+        amount: convertToKobo(numAmount),
+        metadata: {
+          transactionId: payment.transactionId,
+          purpose: "load_wallet",
+        },
+        onSuccess: (reference) => {
+          void (async () => {
+            const confirmed = await confirmWalletLoadSuccess(
+              payment.transactionId || reference,
+            );
+            setIsLoading(false);
+            if (!confirmed) {
+              setError(
+                "Payment received but we couldn't update your wallet yet. Please refresh shortly or contact support.",
+              );
+              return;
+            }
+            setAmount("");
+            onSuccess();
+            onClose();
+          })();
+        },
+        onClose: () => {
+          void cancelWalletLoad(payment.transactionId);
+          setIsLoading(false);
+        },
+      });
     } catch {
       setError("Failed to initiate payment. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };

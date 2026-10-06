@@ -5,7 +5,8 @@ import {
 } from "@/constants/portal/navlinks";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 
 const linkClasses = (active: boolean) =>
   `group relative whitespace-nowrap flex items-center justify-center md:justify-start gap-3 cursor-pointer px-2 md:px-4 py-3 rounded-xl text-sm font-medium-custom transition-all duration-200 ${
@@ -21,6 +22,13 @@ const iconClasses = (active: boolean) =>
 
 export const SideBar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  const handleLogout = () => {
+    clearAuth();
+    router.push("/");
+  };
 
   return (
     <section className="fixed w-16 md:w-56 h-full border-r border-primary/10 bg-white left-0 top-0 flex flex-col justify-between items-center">
@@ -64,6 +72,23 @@ export const SideBar = () => {
       <nav className="w-full p-2 md:p-4 border-t border-slate-100">
         <ul className="flex flex-col gap-1.5">
           {SIDEBAR_BOTTOM_LINKS.map((link) => {
+            if (link.href === "#") {
+              return (
+                <li key={link.name} className="list-none">
+                  <button
+                    type="button"
+                    title={link.name}
+                    onClick={handleLogout}
+                    className={`${linkClasses(false)} w-full`}
+                  >
+                    {link.icon && (
+                      <link.icon size={18} className={iconClasses(false)} />
+                    )}
+                    <span className="sr-only md:not-sr-only">{link.name}</span>
+                  </button>
+                </li>
+              );
+            }
             const active = pathname === link.href;
             return (
               <Link href={link.href} key={link.name} title={link.name}>

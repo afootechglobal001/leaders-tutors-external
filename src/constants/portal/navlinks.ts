@@ -3,7 +3,6 @@ import {
   UserStar,
   TvMinimalPlay,
   CalendarSync,
-  ArrowLeftRight,
   Settings2,
   LogOut,
 } from "lucide-react";
@@ -36,11 +35,6 @@ export const SIDEBAR_TOP_LINKS = [
     name: "Subscriptions",
     href: "/subscriptions",
     icon: CalendarSync,
-  },
-  {
-    name: "Transactions",
-    href: "/transactions",
-    icon: ArrowLeftRight,
   },
 ];
 

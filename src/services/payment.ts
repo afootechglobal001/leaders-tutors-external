@@ -13,6 +13,7 @@ export interface WalletTransaction {
 export interface PaymentInitiation {
   transactionId: string;
   paymentUrl: string;
+  paystackPaymentKey: string;
   amount: number;
   currency: string;
 }
@@ -22,8 +23,10 @@ interface PaymentApiResponse {
   id?: string;
   paymentUrl?: string;
   authorization_url?: string;
-  amount?: number;
+  paystackPaymentKey?: string;
+  amount?: number | string;
   currency?: string;
+  paymentProceedData?: PaymentApiResponse;
 }
 
 interface RawWalletTransaction {
@@ -44,17 +47,24 @@ export const initiateWalletLoad = async (
   amount: number,
 ): Promise<PaymentInitiation> => {
   try {
-    const data = await apiClient.post<PaymentApiResponse>(
+    const response = await apiClient.post<PaymentApiResponse>(
       "/user/payment/load-wallet-log",
       {
         amount: amount.toString(),
       },
     );
+    // Same envelope as signup: details may sit under paymentProceedData.
+    const data = { ...response, ...response?.paymentProceedData };
+    const transactionId = data.transactionId || data.id || "";
+    if (!transactionId) {
+      throw new Error("No transaction id returned");
+    }
 
     return {
-      transactionId: data.transactionId || data.id || "",
+      transactionId,
       paymentUrl: data.paymentUrl || data.authorization_url || "",
-      amount: data.amount || amount,
+      paystackPaymentKey: data.paystackPaymentKey || "",
+      amount: Number(data.amount) || amount,
       currency: data.currency || "₦",
     };
   } catch (error) {
