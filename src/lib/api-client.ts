@@ -2,6 +2,7 @@ import { AxiosRequestConfig, AxiosResponse } from "axios";
 import api from "./axios";
 
 type ApiResponse<T> = { data: T };
+type ApiEnvelope<T> = ApiResponse<T> & Record<string, unknown>;
 
 function extractData<T>(response: AxiosResponse<ApiResponse<T>>): T {
   const inner = response.data;
@@ -12,6 +13,15 @@ export const apiClient = {
   get: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     const res = await api.get<ApiResponse<T>>(url, config);
     return extractData<T>(res);
+  },
+
+  // Keeps response metadata that sits beside `data`, such as examData.
+  getEnvelope: async <T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiEnvelope<T>> => {
+    const res = await api.get<ApiEnvelope<T>>(url, config);
+    return res.data;
   },
 
   post: async <T, B = unknown>(

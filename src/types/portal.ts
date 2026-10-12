@@ -15,6 +15,7 @@ export interface TutorialVideo {
   year: number | string;
   videoUrl: string;
   thumbnailUrl?: string;
+  materialUrl?: string;
   duration?: string;
   description?: string;
 }

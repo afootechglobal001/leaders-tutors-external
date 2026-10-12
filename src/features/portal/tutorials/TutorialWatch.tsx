@@ -7,6 +7,7 @@ import {
   CalendarDays,
   GraduationCap,
   Lock,
+  FileDown,
 } from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
@@ -158,26 +159,47 @@ export default function TutorialWatch() {
         </div>
       </section>
 
-      <section className="grid gap-6 px-4 py-6 md:px-8 lg:grid-cols-3 animate-fade-up">
+      <section className="grid items-start gap-6 px-4 py-6 md:px-8 lg:grid-cols-3 animate-fade-up">
         {/* Player + details */}
-        <div className="space-y-6 lg:col-span-2">
-          <div className="overflow-hidden rounded-2xl bg-black shadow-pop ring-1 ring-primary/20">
-            <div className="relative aspect-video">
-              {videoData.videoUrl ? (
-                <video
-                  className="h-full w-full"
-                  controls
-                  poster={videoData.thumbnailUrl}
-                >
-                  <source src={videoData.videoUrl} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-white/80">
-                  Video URL is not available for this tutorial.
-                </div>
-              )}
+        <div className="mx-auto w-full max-w-3xl space-y-4 lg:col-span-2 lg:max-w-none lg:space-y-6">
+          <div className="-mx-4 flex min-h-[calc(100svh-9rem)] w-[calc(100%+2rem)] flex-col justify-center gap-4 bg-slate-950 px-4 py-8 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8 lg:mx-0 lg:min-h-0 lg:w-full lg:gap-6 lg:bg-transparent lg:p-0">
+            <div className="mx-auto w-full overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/15 lg:shadow-pop lg:ring-primary/20">
+              <div className="relative aspect-video">
+                {videoData.videoUrl ? (
+                  <video
+                    className="h-full w-full"
+                    controls
+                    poster={videoData.thumbnailUrl}
+                  >
+                    <source src={videoData.videoUrl} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-white/80">
+                    Video URL is not available for this tutorial.
+                  </div>
+                )}
+              </div>
             </div>
+
+            {videoData.materialUrl ? (
+              <a
+                href={videoData.materialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mx-auto flex w-full items-center justify-between rounded-2xl border border-primary/10 bg-white p-4 text-sm font-semibold text-primary shadow-card transition hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-pop"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light">
+                    <FileDown className="h-5 w-5" />
+                  </span>
+                  Tutorial material
+                </span>
+                <span className="text-xs uppercase tracking-wide">
+                  Open PDF
+                </span>
+              </a>
+            ) : null}
           </div>
 
           <Card className="space-y-4">

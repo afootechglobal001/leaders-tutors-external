@@ -207,7 +207,7 @@ export default function Subscriptions() {
         </div>
       </section>
 
-      <section className="px-6 pt-4">
+      <section className="px-4 pt-4 sm:px-6">
         <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center text-white text-xs font-semibold font-medium-custom">
@@ -226,16 +226,16 @@ export default function Subscriptions() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="text-right">
+          <div className="grid w-full grid-cols-2 items-end gap-4 md:flex md:w-auto md:items-center md:gap-6">
+            <div className="text-left md:text-right">
               <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
                 Subscription expires in
               </p>
-              <p className="text-2xl font-bold text-[var(--title-color)] font-medium-custom">
+              <p className="whitespace-nowrap text-xl font-bold text-[var(--title-color)] font-medium-custom sm:text-2xl">
                 {summary.subscriptionExpiresIn} Day(s)
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-left md:text-right">
               <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
                 Wallet Balance
               </p>
@@ -244,29 +244,105 @@ export default function Subscriptions() {
                 {summary.walletBalance.toLocaleString()}
               </p>
             </div>
-            <Button
-              text="Load Wallet"
-              size="sm"
-              onClick={() => setShowWalletModal(true)}
-            />
+            <div className="col-span-2 md:col-span-1">
+              <Button
+                text="Load Wallet"
+                size="sm"
+                fullWidth
+                className="md:w-auto"
+                onClick={() => setShowWalletModal(true)}
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="px-6 py-6 font-regular-custom">
+      <section className="px-4 py-6 font-regular-custom sm:px-6">
         <div className="bg-white rounded-xl shadow-md border border-[var(--border-color)] overflow-hidden">
-          <div className="px-6 py-4 bg-[var(--gray-color)] flex items-center justify-between border-b border-[var(--border-color)]">
+          <div className="flex flex-col items-stretch gap-3 border-b border-[var(--border-color)] bg-[var(--gray-color)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <h2 className="text-sm font-bold text-[var(--head-color)] uppercase tracking-wide font-bold-custom">
               Subscription History
             </h2>
             <Button
               text="Download"
               size="sm"
+              fullWidth
+              className="sm:w-auto"
               frontIcon={<Download size={14} />}
             />
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="divide-y divide-[var(--border-color-light)] md:hidden">
+            {isLoading ? (
+              <p className="px-4 py-10 text-center text-sm text-[var(--text-secondary-color)]">
+                Loading subscription history...
+              </p>
+            ) : rows.length ? (
+              rows.map((row) => (
+                <article key={row.subscriptionId} className="space-y-4 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary-color)]">
+                        Subscription #{row.sn}
+                      </p>
+                      <p className="mt-1 break-all text-sm font-semibold text-[var(--title-color)]">
+                        {row.subscriptionId}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold uppercase ${statusStyles[row.status]}`}
+                    >
+                      {row.status}
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--text-secondary-color)]">
+                        Department
+                      </dt>
+                      <dd className="mt-1 font-medium text-[var(--title-color)]">
+                        {row.department}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--text-secondary-color)]">
+                        Class
+                      </dt>
+                      <dd className="mt-1 font-medium text-[var(--title-color)]">
+                        {row.className}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--text-secondary-color)]">
+                        Subscription date
+                      </dt>
+                      <dd className="mt-1 leading-5 text-[var(--title-color)]">
+                        {row.subscriptionDate}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--text-secondary-color)]">
+                        Due date
+                      </dt>
+                      <dd className="mt-1 leading-5 text-[var(--title-color)]">
+                        {row.dueDate}
+                      </dd>
+                    </div>
+                  </dl>
+                  <button className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold uppercase text-[var(--title-color)] transition hover:bg-slate-200">
+                    <Eye size={14} />
+                    View details
+                  </button>
+                </article>
+              ))
+            ) : (
+              <p className="px-4 py-10 text-center text-sm text-[var(--text-secondary-color)]">
+                No subscription records found.
+              </p>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead className="text-[10px] uppercase text-[var(--text-secondary-color)] bg-white">
                 <tr className="border-b border-[var(--border-color)]">

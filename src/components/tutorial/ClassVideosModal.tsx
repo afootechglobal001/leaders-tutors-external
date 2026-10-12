@@ -263,6 +263,16 @@ export default function ClassVideosModal({
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-[var(--primary-color)]">
                             {String(index + 1).padStart(2, "0")}
                           </span>
+                          {video.thumbnailUrl ? (
+                            <span
+                              role="img"
+                              aria-label={`Thumbnail for ${video.title}`}
+                              className="h-12 w-16 shrink-0 rounded-lg bg-slate-100 bg-cover bg-center shadow-sm sm:h-14 sm:w-20"
+                              style={{
+                                backgroundImage: `url(${JSON.stringify(video.thumbnailUrl)})`,
+                              }}
+                            />
+                          ) : null}
                           <span className="min-w-0 flex-1">
                             <span className="block break-words text-sm font-medium leading-6 text-slate-800">
                               {video.title}

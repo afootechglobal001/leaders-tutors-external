@@ -94,6 +94,46 @@ const firstString = (source: RecordLike, keys: string[], fallback = "") => {
   return fallback;
 };
 
+const tutorialDocumentDirectories: Record<string, string> = {
+  tutorialPicturesPath: "tutorialPictures",
+  tutorialVideosPath: "tutorialVideos",
+  tutorialMaterialsPath: "tutorialMaterials",
+};
+
+const getDefaultDocumentPath = (pathKey: string): string => {
+  const directory = tutorialDocumentDirectories[pathKey];
+  const apiBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  if (!directory || !apiBaseUrl) return "";
+
+  try {
+    const apiOrigin = new URL(apiBaseUrl).origin;
+    return `${apiOrigin}/external-admin/uploaded_files/${directory}`;
+  } catch {
+    return "";
+  }
+};
+
+const resolveDocumentUrl = (
+  item: RecordLike,
+  fileKeys: string[],
+  pathKey: string,
+): string | undefined => {
+  const file = firstString(item, fileKeys);
+  if (!file) return undefined;
+
+  // Some API variants already return a complete URL.
+  if (/^(?:https?:)?\/\//i.test(file) || /^(?:data|blob):/i.test(file)) {
+    return file;
+  }
+
+  const documentPath = asRecord(item.documentPath);
+  const basePath =
+    asString(documentPath[pathKey]) || getDefaultDocumentPath(pathKey);
+  if (!basePath) return file;
+
+  return `${basePath.replace(/\/+$/, "")}/${file.replace(/^\/+/, "")}`;
+};
+
 const asNumber = (value: unknown, fallback = 0): number => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim()) {
@@ -259,28 +299,45 @@ const mapClassVideo = (item: RecordLike, yearLabel?: string): ClassVideo => {
     subjectId: firstString(item, ["subjectId"]),
     description:
       firstString(item, ["tutorialDescription", "description"]) || undefined,
-    thumbnailUrl:
-      firstString(item, ["tutorialPicture", "thumbnailUrl", "thumbnail"]) ||
-      undefined,
+    thumbnailUrl: resolveDocumentUrl(
+      item,
+      ["tutorialPicture", "thumbnailUrl", "thumbnail"],
+      "tutorialPicturesPath",
+    ),
   };
 };
 
 const mapTutorialVideo = (item: RecordLike): TutorialVideo => {
   const classVideo = mapClassVideo(item);
+  const subjectData = asRecord(item.subjectData);
+  const yearData = asRecord(item.yearData);
+  const departmentData = asRecord(item.departmentData);
+  const examData = asRecord(item.examData);
   return {
     id: classVideo.id,
     title: classVideo.title,
-    subject: firstString(item, ["subjectName", "subject"]),
-    department: firstString(item, ["departmentName", "department"]),
-    exam: firstString(item, ["examAbbreviation", "examAbbr", "exam"]),
-    year: classVideo.year,
-    videoUrl: firstString(item, [
-      "tutorialVideo",
-      "tutorialVideoUrl",
-      "videoUrl",
-      "video",
-    ]),
+    subject:
+      firstString(item, ["subjectName", "subject"]) ||
+      firstString(subjectData, ["subject_name", "subjectName"]),
+    department:
+      firstString(item, ["departmentName", "department"]) ||
+      firstString(departmentData, ["departmentName", "name"]),
+    exam:
+      firstString(item, ["examAbbreviation", "examAbbr", "exam"]) ||
+      firstString(examData, ["examAbbreviation", "examName", "name"]),
+    year: firstString(yearData, ["yearValue", "year"]) || classVideo.year,
+    videoUrl:
+      resolveDocumentUrl(
+        item,
+        ["tutorialVideo", "tutorialVideoUrl", "videoUrl", "video"],
+        "tutorialVideosPath",
+      ) || "",
     thumbnailUrl: classVideo.thumbnailUrl,
+    materialUrl: resolveDocumentUrl(
+      item,
+      ["tutorialMaterial", "tutorialMaterialUrl", "materialUrl", "material"],
+      "tutorialMaterialsPath",
+    ),
     duration: classVideo.duration,
     description: classVideo.description,
   };
@@ -457,8 +514,15 @@ export const fetchSubjectsWithVideos = async (
           duration: asString(tr.tutorialDuration ?? tr.duration) || undefined,
           description:
             asString(tr.tutorialDescription ?? tr.description) || undefined,
-          thumbnailUrl:
-            asString(tr.tutorialPicture ?? tr.thumbnailUrl) || undefined,
+          thumbnailUrl: resolveDocumentUrl(
+            {
+              ...tr,
+              documentPath:
+                tr.documentPath ?? subRec.documentPath ?? yearRec.documentPath,
+            },
+            ["tutorialPicture", "thumbnailUrl", "thumbnail"],
+            "tutorialPicturesPath",
+          ),
         });
         return acc;
       }, []);
@@ -488,11 +552,11 @@ export const fetchSubjectsWithVideos = async (
 export const fetchTutorialById = async (
   tutorialId: string,
 ): Promise<TutorialVideo | null> => {
-  const data = await apiClient.get<unknown>(
+  const response = await apiClient.getEnvelope<unknown>(
     `/user/tutorials/fetch-tutorial-by-id?tutorialId=${encodeURIComponent(tutorialId)}`,
   );
 
-  const payload = unwrapPayload(data);
+  const payload = unwrapPayload(response.data);
   const record = Array.isArray(payload)
     ? asArray(payload)[0]
     : asRecord(payload);
@@ -501,7 +565,11 @@ export const fetchTutorialById = async (
     return null;
   }
 
-  return mapTutorialVideo(record);
+  return mapTutorialVideo({
+    ...record,
+    departmentData: record.departmentData ?? response.departmentData,
+    examData: record.examData ?? response.examData,
+  });
 };
 
 export const fetchTutorialVideos = async (

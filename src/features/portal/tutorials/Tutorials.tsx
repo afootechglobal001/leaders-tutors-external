@@ -199,13 +199,13 @@ export default function Tutorials() {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <div className="text-right">
+          <div className="grid w-full grid-cols-2 items-end gap-4 md:flex md:w-auto md:items-center md:gap-6">
+            <div className="text-left md:text-right">
               <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
                 Remaining Days
               </p>
               <p
-                className={`text-sm font-bold font-medium-custom ${
+                className={`whitespace-nowrap text-sm font-bold font-medium-custom ${
                   summary.subscriptionExpiresIn <= 7
                     ? "text-[var(--failed-color)]"
                     : "text-[var(--title-color)]"
@@ -214,7 +214,7 @@ export default function Tutorials() {
                 {summary.subscriptionExpiresIn} Day(s)
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-left md:text-right">
               <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
                 Wallet Balance
               </p>
@@ -223,11 +223,15 @@ export default function Tutorials() {
                 {summary.walletBalance.toLocaleString()}
               </p>
             </div>
-            <Button
-              text="Load Wallet"
-              size="sm"
-              onClick={() => setShowWalletModal(true)}
-            />
+            <div className="col-span-2 md:col-span-1">
+              <Button
+                text="Load Wallet"
+                size="sm"
+                fullWidth
+                className="md:w-auto"
+                onClick={() => setShowWalletModal(true)}
+              />
+            </div>
           </div>
         </div>
       </section>
