@@ -1,10 +1,9 @@
 import { FeedbackDialog } from "@/components/feedback-dialog";
-import { Button, TextInput } from "@/components/form";
+import { Button, PasswordInput } from "@/components/form";
 import useToggle from "@/hooks/useToggle";
 import { AuthFormStepsType } from "@/types/auth/auth";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
 interface AuthFormStepsProps {
   gotoAuthFormPage: (stepKey: AuthFormStepsType) => void;
 }
@@ -21,8 +20,6 @@ export const CreatePassword: React.FC<AuthFormStepsProps> = (props) => {
     passwordResetSuccessToggle.open();
     setIsPending(false);
   };
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   return (
     <>
       <section className="flex flex-col gap-5 justify-center items-start animate-fade-up">
@@ -44,58 +41,10 @@ export const CreatePassword: React.FC<AuthFormStepsProps> = (props) => {
             Enter a strong password to secure your account.
           </p>
         </div>
-        <div className="w-full relative">
-          <TextInput
-            id="password"
-            label="Create Password"
-            type={showPassword ? "text" : "password"}
-          />
-
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-          >
-            <Image
-              src={
-                showPassword
-                  ? "/assets/svgs/eye-off.svg"
-                  : "/assets/svgs/eye.svg"
-              }
-              alt="Toggle password visibility"
-              className="w-5 h-5"
-              width={0}
-              height={0}
-              unoptimized
-            />
-          </button>
-        </div>
+        <PasswordInput id="password" label="Create Password" />
 
         {/* Confirm Password */}
-        <div className="w-full relative">
-          <TextInput
-            type={showConfirmPassword ? "text" : "password"}
-            label="Confirm password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-          >
-            <Image
-              src={
-                showConfirmPassword
-                  ? "/assets/svgs/eye-off.svg"
-                  : "/assets/svgs/eye.svg"
-              }
-              alt="Toggle confirm password visibility"
-              className="w-5 h-5"
-              width={0}
-              height={0}
-              unoptimized
-            />
-          </button>
-        </div>
+        <PasswordInput id="confirmPassword" label="Confirm password" />
         {/* BUTTON */}
         <Button
           onClick={createPassword}

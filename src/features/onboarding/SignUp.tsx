@@ -2,7 +2,12 @@
 
 import { UserAuthWrapper } from "@/features/auth/UserAuthWrapper";
 import { useRouter } from "next/navigation";
-import { Button, FormSelect, TextInput } from "@/components/form";
+import {
+  Button,
+  FormSelect,
+  PasswordInput,
+  TextInput,
+} from "@/components/form";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -109,11 +114,11 @@ export default function SignUp() {
     <UserAuthWrapper>
       <section className="flex flex-col gap-5 justify-center items-start animate-fade-down">
         <div className="flex flex-col gap-2">
-          <div className="w-20">
+          <div className="hidden w-20 lg:block">
             <Image
               src="/body-pix/icon.png"
-              alt="Vector"
-              className="w-full h-auto"
+              alt="Leaders Tutors"
+              className="h-auto w-full"
               width={0}
               height={0}
               unoptimized
@@ -178,27 +183,21 @@ export default function SignUp() {
           disabled={isPending}
         />
 
-        <div className="w-full relative">
-          <TextInput
-            id="password"
-            type="password"
-            label="Create Password"
-            message={errors.password?.message}
-            disabled={isPending}
-            {...register("password")}
-          />
-        </div>
+        <PasswordInput
+          id="password"
+          label="Create Password"
+          message={errors.password?.message}
+          disabled={isPending}
+          {...register("password")}
+        />
 
-        <div className="w-full relative">
-          <TextInput
-            id="confirmPassword"
-            type="password"
-            label="Confirm Password"
-            message={errors.confirmPassword?.message}
-            disabled={isPending}
-            {...register("confirmPassword")}
-          />
-        </div>
+        <PasswordInput
+          id="confirmPassword"
+          label="Confirm Password"
+          message={errors.confirmPassword?.message}
+          disabled={isPending}
+          {...register("confirmPassword")}
+        />
 
         <Button
           text="Sign-Up"

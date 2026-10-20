@@ -85,6 +85,12 @@
   select:-webkit-autofill {
     -webkit-text-fill-color: #030303 !important;
   }
+
+  /* Use the app's password visibility toggle instead of Edge's native reveal icon. */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none;
+  }
 }
 
 /* ===== Utilities Layer ===== */

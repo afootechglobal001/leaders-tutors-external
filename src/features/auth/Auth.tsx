@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, TextInput } from "@/components/form";
+import { Button, PasswordInput, TextInput } from "@/components/form";
 import { AuthFormStepsType } from "@/types/auth/auth";
 import { AuthLoginSchema, AuthLoginType } from "@/types/auth/schema";
 import { ArrowRight } from "lucide-react";
@@ -67,13 +67,13 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
 
   return (
     <>
-      <section className="flex flex-col gap-5 justify-center items-start animate-fade-up">
+      <section className="flex w-full flex-col gap-5 justify-center items-start animate-fade-up">
         <div className="flex flex-col gap-2">
-          <div className="w-50">
+          <div className="hidden w-50 lg:block">
             <Image
               src="/body-pix/logo.png"
-              alt="Vector"
-              className="w-full h-auto"
+              alt="Leaders Tutors"
+              className="h-auto w-full"
               width={0}
               height={0}
               unoptimized
@@ -95,10 +95,9 @@ export const Auth: React.FC<AuthFormStepsProps> = (props) => {
           disabled={isPending}
           {...register("email")}
         />
-        <TextInput
+        <PasswordInput
           id="password"
           label="Password"
-          type="password"
           message={errors.password?.message}
           disabled={isPending}
           {...register("password")}
