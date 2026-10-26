@@ -1,13 +1,7 @@
 #!/bin/sh
 
-# Run formatting and linting
+# Run formatting and linting on staged files
 echo "🔍 Running pre-commit checks..."
-
-# Run prettier formatting
-if ! npx prettier --write .; then
-  echo "❌ Prettier formatting failed"
-  exit 1
-fi
 
 # Run lint-staged
 if ! npx lint-staged; then

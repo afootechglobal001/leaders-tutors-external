@@ -1,14 +1,16 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, ReactNode } from "react";
 
 export type MessageType = "info" | "success" | "warning" | "error";
 
-interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   isOperator?: boolean;
   message?: string;
   messageType?: MessageType;
+  inputClassName?: string;
+  endAdornment?: ReactNode;
 }
 
 export const getMessageColor = (type: MessageType) => {
@@ -37,6 +39,8 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       message,
       messageType = "error",
       className,
+      inputClassName,
+      endAdornment,
       disabled,
       ...rest
     },
@@ -47,7 +51,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
     return (
       <fieldset className="flex flex-col w-full">
         <div
-          className={`relative w-full 
+          className={`group relative w-full 
         rounded-md bg-slate-50 
         transition-all duration-200  ${
           !isOperator ? " border-2 border-gray-200" : ""
@@ -66,7 +70,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             autoComplete="new-password"
             aria-invalid={message ? "true" : "false"}
             aria-describedby={message ? `${id}-message` : undefined}
-            className={`block p-4 w-full text-xl text-black bg-white autofill:bg-inherit! active:bg-transparent! placeholder-transparent rounded-lg border-0 focus:outline-none peer ${
+            className={`block p-4 w-full text-base font-medium-custom tracking-[0.01em] text-slate-800 bg-white autofill:bg-inherit! active:bg-transparent! placeholder-transparent rounded-lg border-0 focus:outline-none peer ${inputClassName ?? ""} ${
               disabled ? "bg-gray-100!" : ""
             }`}
             style={{ fontStyle: "normal", fontWeight: 400 }}
@@ -74,6 +78,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             ref={ref}
             {...rest}
           />
+          {endAdornment}
           {label && (
             <label
               htmlFor={id}
