@@ -4,6 +4,7 @@ import useToggle from "@/hooks/useToggle";
 import { AuthFormStepsType } from "@/types/auth/auth";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 interface AuthFormStepsProps {
   gotoAuthFormPage: (stepKey: AuthFormStepsType) => void;
 }
