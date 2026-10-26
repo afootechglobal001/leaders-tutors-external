@@ -350,7 +350,7 @@ export default function SignUp() {
           id="password"
           label="Create Password"
           message={errors.password?.message}
-          disabled={isPending}
+          disabled={isPaying}
           {...register("password")}
         />
 
@@ -358,7 +358,7 @@ export default function SignUp() {
           id="confirmPassword"
           label="Confirm Password"
           message={errors.confirmPassword?.message}
-          disabled={isPending}
+          disabled={isPaying}
           {...register("confirmPassword")}
         />
 
