@@ -26,6 +26,10 @@ export default function TutorialWatch() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const tutorialId = searchParams.get("tutorialId");
+  const subjectId = searchParams.get("subjectId");
+  const tutorialsHref = subjectId
+    ? `/tutorials?subjectId=${encodeURIComponent(subjectId)}`
+    : "/tutorials";
 
   const [videoData, setVideoData] = useState<TutorialVideo | null>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
@@ -144,7 +148,7 @@ export default function TutorialWatch() {
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-secondary/15 blur-3xl" />
         <div className="relative flex items-center gap-4 px-4 py-5 md:px-8">
           <Link
-            href="/tutorials"
+            href={tutorialsHref}
             aria-label="Back to tutorials"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-card transition hover:-translate-x-0.5 hover:bg-primary-light"
           >

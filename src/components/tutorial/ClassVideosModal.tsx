@@ -107,9 +107,9 @@ export default function ClassVideosModal({
 
   const watchVideo = (tutorialId: string) => {
     onClose();
-    router.push(
-      `/tutorials/watch?tutorialId=${encodeURIComponent(tutorialId)}`,
-    );
+    const params = new URLSearchParams({ tutorialId });
+    if (subject?.subjectId) params.set("subjectId", subject.subjectId);
+    router.push(`/tutorials/watch?${params.toString()}`);
   };
 
   return (

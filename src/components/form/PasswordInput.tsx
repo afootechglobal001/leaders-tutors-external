@@ -21,7 +21,7 @@ export const PasswordInput = (props: PasswordInputProps) => {
           aria-pressed={isVisible}
           title={isVisible ? "Hide password" : "Show password"}
           onClick={() => setIsVisible((visible) => !visible)}
-          className="pointer-events-none absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 opacity-0 transition-all group-focus-within:pointer-events-auto group-focus-within:opacity-100 hover:bg-gray-100 hover:text-gray-800 focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary-color)"
+          className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary-color)"
         >
           {isVisible ? (
             <EyeOff size={20} aria-hidden="true" />
