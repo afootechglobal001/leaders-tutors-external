@@ -8,10 +8,20 @@ import { UserAuthWrapper } from "../auth/UserAuthWrapper";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useRouter } from "next/navigation";
 import useToggle from "@/hooks/useToggle";
+import { PENDING_SIGNUP_EMAIL_STORAGE_KEY } from "@/services/auth";
 
 export const OtpVerification = () => {
   const [timer, setTimer] = useState(30);
   const [showResendLink, setShowResendLink] = useState(false);
+  const [emailAddress] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return (
+      window.sessionStorage.getItem(PENDING_SIGNUP_EMAIL_STORAGE_KEY) || ""
+    );
+  });
   const countDownSec = () => {
     const countdown = setInterval(() => {
       setTimer((prevTimer) => {
@@ -26,10 +36,11 @@ export const OtpVerification = () => {
     }, 1000);
     return () => clearInterval(countdown);
   };
+  const router = useRouter();
   useEffect(() => {
     const speakTimer = setTimeout(() => {
       countDownSec();
-    }, 2000); // 2-second delay
+    }, 2000);
     return () => clearTimeout(speakTimer);
   }, []);
   const resendOTP = async () => {
@@ -54,7 +65,7 @@ export const OtpVerification = () => {
 
   const handlePasteValue = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const value = e.clipboardData.getData("text");
-    if (isNaN(Number(value))) return false; // Ensure value is treated as a number
+    if (isNaN(Number(value))) return false;
     const updatedValue = value.toString().split("").slice(0, otp.length);
     setOtp(updatedValue);
     e.currentTarget.parentNode?.querySelector(
@@ -75,7 +86,6 @@ export const OtpVerification = () => {
     }
   };
 
-  const router = useRouter();
   const passwordResetSuccessToggle = useToggle();
   const [isPending, setIsPending] = useState(false);
   const login = () => {
@@ -107,7 +117,7 @@ export const OtpVerification = () => {
           <p>
             Enter the verification code sent to your email address{" "}
             <span className="font-medium-custom text-(--primary-color)">
-              sunaf4real@gmail.com
+              {emailAddress || "your email address"}
             </span>
           </p>
         </div>
@@ -141,7 +151,6 @@ export const OtpVerification = () => {
           </p>
         )}
 
-        {/* BUTTON */}
         <Button
           text="Proceed"
           frontIcon={<ArrowRight />}
