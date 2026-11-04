@@ -3,9 +3,10 @@
 import { Play, BookOpen, ArrowUpRight } from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/form";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   fetchDashboardSummary,
   fetchSubjectsWithVideos,
@@ -19,6 +20,9 @@ import SubjectList from "@/features/portal/tutorials/SubjectList";
 
 export default function Tutorials() {
   const { user, token } = useAuthStore();
+  const searchParams = useSearchParams();
+  const subjectIdParam = searchParams.get("subjectId");
+  const hasAppliedSubjectParam = useRef(false);
   const [summary, setSummary] = useState<DashboardSummary>({
     subscriptionExpiresIn: 0,
     walletBalance: 0,
@@ -77,6 +81,27 @@ export default function Tutorials() {
 
     loadData();
   }, [token, user]);
+
+  useEffect(() => {
+    if (hasAppliedSubjectParam.current || !subjects.length) return;
+
+    let storedSubjectId: string | null = null;
+    try {
+      storedSubjectId = sessionStorage.getItem("lastViewedSubjectId");
+      sessionStorage.removeItem("lastViewedSubjectId");
+    } catch {
+      // sessionStorage unavailable (private mode, etc.) — URL param still covers this case
+    }
+
+    const targetSubjectId = subjectIdParam ?? storedSubjectId;
+    if (!targetSubjectId) return;
+
+    hasAppliedSubjectParam.current = true;
+    const matchedSubject = subjects.find(
+      (subject) => subject.subjectId === targetSubjectId,
+    );
+    if (matchedSubject) setSelectedSubject(matchedSubject);
+  }, [subjectIdParam, subjects]);
 
   const userName = user
     ? `${user.first_name} ${user.last_name}`

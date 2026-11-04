@@ -19,17 +19,23 @@ import { useSearchParams } from "next/navigation";
 import { fetchTutorialById, fetchUserSubscription } from "@/services/portal";
 import { TutorialVideo } from "@/types/portal";
 import SubscriptionModal from "@/components/subscription/SubscriptionModal";
+import PdfPreviewModal from "@/components/tutorials/PdfPreviewModal";
 import { Avatar, Badge, Card } from "@/components/ui";
 
 export default function TutorialWatch() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const tutorialId = searchParams.get("tutorialId");
+  const subjectId = searchParams.get("subjectId");
+  const tutorialsHref = subjectId
+    ? `/tutorials?subjectId=${encodeURIComponent(subjectId)}`
+    : "/tutorials";
 
   const [videoData, setVideoData] = useState<TutorialVideo | null>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   useEffect(() => {
     const loadVideoData = async () => {
@@ -142,7 +148,7 @@ export default function TutorialWatch() {
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-secondary/15 blur-3xl" />
         <div className="relative flex items-center gap-4 px-4 py-5 md:px-8">
           <Link
-            href="/tutorials"
+            href={tutorialsHref}
             aria-label="Back to tutorials"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-card transition hover:-translate-x-0.5 hover:bg-primary-light"
           >
@@ -183,10 +189,9 @@ export default function TutorialWatch() {
             </div>
 
             {videoData.materialUrl ? (
-              <a
-                href={videoData.materialUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => setShowPdfPreview(true)}
                 className="mx-auto flex w-full items-center justify-between rounded-2xl border border-primary/10 bg-white p-4 text-sm font-semibold text-primary shadow-card transition hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-pop"
               >
                 <span className="flex items-center gap-3">
@@ -195,10 +200,8 @@ export default function TutorialWatch() {
                   </span>
                   Tutorial material
                 </span>
-                <span className="text-xs uppercase tracking-wide">
-                  Open PDF
-                </span>
-              </a>
+                <span className="text-xs uppercase tracking-wide">Preview</span>
+              </button>
             ) : null}
           </div>
 
@@ -305,6 +308,15 @@ export default function TutorialWatch() {
           </Card>
         </aside>
       </section>
+
+      {videoData.materialUrl ? (
+        <PdfPreviewModal
+          isOpen={showPdfPreview}
+          onClose={() => setShowPdfPreview(false)}
+          url={videoData.materialUrl}
+          title={videoData.title}
+        />
+      ) : null}
     </PortalWrapper>
   );
 }
