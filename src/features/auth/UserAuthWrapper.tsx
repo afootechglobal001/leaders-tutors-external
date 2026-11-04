@@ -9,7 +9,7 @@ export const UserAuthWrapper = ({ children }: UserAuthWrapperProps) => {
   return (
     <main className="min-h-screen min-h-dvh w-full flex flex-col lg:flex-row overflow-x-hidden">
       {/* LEFT SECTION */}
-      <section className="relative flex h-[64vw] min-h-56 max-h-72 w-full flex-col justify-between items-start bg-[url('/body-pix/auth-bg.png')] bg-cover bg-[position:center_25%] bg-no-repeat p-5 animate-fade-left flex-shrink-0 sm:h-[38vw] lg:h-auto lg:min-h-dvh lg:max-h-none lg:bg-[position:center_35%] lg:w-[46%] lg:max-w-[760px] lg:p-10">
+      <section className="relative flex h-[64vw] min-h-56 max-h-72 w-full flex-col justify-between items-start overflow-hidden bg-[url('/body-pix/auth-bg.png')] bg-cover bg-[position:center_25%] bg-no-repeat p-5 animate-fade-left flex-shrink-0 sm:h-[38vw] lg:h-auto lg:min-h-dvh lg:max-h-none lg:bg-[position:center_35%] lg:w-[46%] lg:max-w-[760px] lg:p-10">
         {/* logo */}
         <div className="w-14 lg:w-20">
           <Image
@@ -37,7 +37,7 @@ export const UserAuthWrapper = ({ children }: UserAuthWrapperProps) => {
           </p>
         </div>
       </section>
-      <section className="flex w-full min-w-0 flex-1 justify-center items-start md:items-center px-4 py-8 sm:px-8 lg:px-10">
+      <section className="flex w-full min-w-0 flex-1 justify-center items-start overflow-x-auto md:items-center px-4 py-8 sm:px-8 lg:px-10">
         <div className="w-full max-w-xl">{children}</div>
       </section>
     </main>

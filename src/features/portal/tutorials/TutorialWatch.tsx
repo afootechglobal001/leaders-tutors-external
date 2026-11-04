@@ -19,6 +19,7 @@ import { useSearchParams } from "next/navigation";
 import { fetchTutorialById, fetchUserSubscription } from "@/services/portal";
 import { TutorialVideo } from "@/types/portal";
 import SubscriptionModal from "@/components/subscription/SubscriptionModal";
+import PdfPreviewModal from "@/components/tutorials/PdfPreviewModal";
 import { Avatar, Badge, Card } from "@/components/ui";
 
 export default function TutorialWatch() {
@@ -30,6 +31,7 @@ export default function TutorialWatch() {
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   useEffect(() => {
     const loadVideoData = async () => {
@@ -183,10 +185,9 @@ export default function TutorialWatch() {
             </div>
 
             {videoData.materialUrl ? (
-              <a
-                href={videoData.materialUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => setShowPdfPreview(true)}
                 className="mx-auto flex w-full items-center justify-between rounded-2xl border border-primary/10 bg-white p-4 text-sm font-semibold text-primary shadow-card transition hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-pop"
               >
                 <span className="flex items-center gap-3">
@@ -195,10 +196,8 @@ export default function TutorialWatch() {
                   </span>
                   Tutorial material
                 </span>
-                <span className="text-xs uppercase tracking-wide">
-                  Open PDF
-                </span>
-              </a>
+                <span className="text-xs uppercase tracking-wide">Preview</span>
+              </button>
             ) : null}
           </div>
 
@@ -305,6 +304,15 @@ export default function TutorialWatch() {
           </Card>
         </aside>
       </section>
+
+      {videoData.materialUrl ? (
+        <PdfPreviewModal
+          isOpen={showPdfPreview}
+          onClose={() => setShowPdfPreview(false)}
+          url={videoData.materialUrl}
+          title={videoData.title}
+        />
+      ) : null}
     </PortalWrapper>
   );
 }
