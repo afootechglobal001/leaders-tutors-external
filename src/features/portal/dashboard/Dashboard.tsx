@@ -1,209 +1,347 @@
-"use client";
-import { ChevronDown, ChevronUp, Eye } from "lucide-react";
+﻿"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Wallet,
+  Play,
+  Settings2,
+  Receipt,
+  AlertCircle,
+  RefreshCw,
+  GraduationCap,
+} from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
-import { useState } from "react";
-import { Button } from "@/components/form";
-import Link from "next/link";
+import {
+  fetchSubjectsWithVideos,
+  fetchUserSubscription,
+} from "@/services/portal";
+import { SubjectWithVideos, UserSubscription } from "@/types/portal";
+import WalletLoadModal from "@/components/wallet/WalletLoadModal";
+import ClassVideosModal from "@/components/tutorial/ClassVideosModal";
+import SubjectList from "@/features/portal/tutorials/SubjectList";
 
-interface TutorialSubject {
-  id: string;
-  name: string;
-  terms: {
-    name: string;
-    count: number;
-  }[];
-}
-
-const tutorialSubjects: TutorialSubject[] = [
-  {
-    id: "basic-science",
-    name: "BASIC SCIENCE",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-  {
-    id: "basic-technology",
-    name: "BASIC TECHNOLOGY",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-  {
-    id: "civic-education",
-    name: "CIVIC EDUCATION",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-  {
-    id: "computer-science",
-    name: "COMPUTER SCIENCE",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-    {
-    id: "mathematics",
-    name: "Mathematics",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-];
+const actionClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--primary-color)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover-color)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--primary-color)]";
 
 export default function Dashboard() {
-  const { user } = useAuthStore();
-  const [expandedSubjects, setExpandedSubjects] = useState<string[]>([
-    "basic-science",
-    "basic-technology",
-  ]);
-  const [currentPage] = useState(1);
-  const itemsPerPage = 5;
+  const { user, token, userEnrollment } = useAuthStore();
+  const [subscription, setSubscription] = useState<UserSubscription | null>(
+    null,
+  );
+  const [subjects, setSubjects] = useState<SubjectWithVideos[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] =
+    useState<SubjectWithVideos | null>(null);
 
-  const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) =>
-      prev.includes(subjectId)
-        ? prev.filter((id) => id !== subjectId)
-        : [...prev, subjectId],
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!token || !user) return;
+      setIsLoading(true);
+      setError("");
+      setSubjects([]);
+      setSubscription(null);
+      try {
+        const current = await fetchUserSubscription();
+        if (cancelled) return;
+        setSubscription(current);
+        if (current.isSubscriptionActive) {
+          const courses = await fetchSubjectsWithVideos();
+          if (!cancelled) setSubjects(courses);
+        }
+      } catch {
+        if (!cancelled)
+          setError("We couldn't load your dashboard. Please try again.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user, retry]);
+
+  if (!user || !token)
+    return (
+      <PortalWrapper>
+        <div className="mx-auto max-w-lg px-6 py-20 text-center">
+          <BookOpen className="mx-auto mb-5 h-10 w-10 text-[var(--primary-color)]" />
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Your learning starts here
+          </h1>
+          <p className="my-4 text-sm leading-6 text-slate-500">
+            Sign in to explore your courses and manage your account.
+          </p>
+          <Link href="/" className={actionClass}>
+            Sign in
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </PortalWrapper>
     );
-  };
 
-  const userName = user
-    ? `${user.first_name} ${user.last_name}`
-    : "Ibrahim Ibrahim";
-  const userRole = user?.role || "IBRAHIM";
-
-  // Pagination logic
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentSubjects = tutorialSubjects.slice(startIndex, endIndex);
-  const displayStart = startIndex + 1;
+  const active = subscription?.isSubscriptionActive;
+  const lessons = subjects.reduce(
+    (sum, subject) =>
+      sum +
+      subject.yearGroups.reduce((total, year) => total + year.videos.length, 0),
+    0,
+  );
+  const exam = user.examAbbreviation || userEnrollment?.examAbbreviation;
+  const department = user.departmentName || userEnrollment?.departmentName;
+  const stats = [
+    {
+      label: "Subscription",
+      value: isLoading
+        ? "Loading…"
+        : subscription
+          ? active
+            ? `${subscription.daysLeft ?? 0} days left`
+            : "Inactive"
+          : "Unavailable",
+      note: active
+        ? "Your learning access is active"
+        : "Manage your learning access",
+      icon: CalendarDays,
+      color: "bg-indigo-50 text-indigo-700",
+      href: "/subscriptions",
+      link: "View subscription",
+    },
+    {
+      label: "Wallet balance",
+      value: isLoading
+        ? "—"
+        : subscription
+          ? `${subscription.currency}${subscription.walletBalance.toLocaleString()}`
+          : "—",
+      note: "Available in your wallet",
+      icon: Wallet,
+      color: "bg-emerald-50 text-emerald-700",
+      href: "/subscriptions",
+      link: "Payment history",
+    },
+    {
+      label: "Your course library",
+      value: isLoading
+        ? "—"
+        : error
+          ? "Unavailable"
+          : `${subjects.length} subjects`,
+      note: error
+        ? "Retry to load your courses"
+        : `${lessons} video lesson${lessons !== 1 ? "s" : ""} to explore`,
+      icon: BookOpen,
+      color: "bg-amber-50 text-amber-700",
+      href: "/tutorials",
+      link: "Explore tutorials",
+    },
+  ];
 
   return (
     <PortalWrapper>
-      {/* User Info Bar */}
-      <section className="px-6 pt-4">
-        <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-          {/* Left Side - User Info */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
-              {userName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">
-                {userName}
-              </h2>
-              <p className="text-xs text-gray-500">{userRole}</p>
-            </div>
-          </div>
-
-          {/* Right Side - Subscription & Wallet */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-[10px] text-gray-500">
-                Subscription expires in
-              </p>
-              <p className="text-sm font-semibold text-gray-900">30 Day(s)</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="text-right">
-                <p className="text-[10px] text-gray-500">Wallet Balance</p>
-                <p className="text-sm font-semibold text-gray-900">₦0.00</p>
-              </div>
-              <Eye className="h-4 w-4 text-gray-400 cursor-pointer hover:text-gray-600" />
-            </div>
-            <Button text="Load Wallet" size="sm" className="px-4 text-xs" />
-          </div>
-        </div>
-      </section>
-
-      {/* Tutorial Subjects Section */}
-      <section className="px-6 py-4">
-        <div className="bg-white rounded-lg shadow-sm">
-          {/* Header */}
-          <div className="px-5 py-3 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <span className="text-orange-500">📚</span>
-              LIST OF TUTORIAL SUBJECTS
-            </h2>
-          </div>
-
-          {/* Subjects List */}
+      <div className="mx-auto max-w-7xl px-5 py-7 sm:px-8 sm:py-9">
+        <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            {currentSubjects.map((subject, index) => {
-              const isExpanded = expandedSubjects.includes(subject.id);
-              const isLast = index === currentSubjects.length - 1;
-              return (
-                <div
-                  key={subject.id}
-                  className={`px-5 py-3 ${!isLast ? "border-b border-gray-200" : ""}`}
-                >
-                  {/* Subject Header */}
-                  <button
-                    onClick={() => toggleSubject(subject.id)}
-                    className="w-full flex items-center justify-between hover:bg-gray-50 -mx-2 px-2 py-1.5 rounded transition-colors"
-                  >
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      {subject.name}
-                    </h3>
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    )}
-                  </button>
-
-                  {/* Terms */}
-                  {isExpanded && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {subject.terms.map((term, index) => (
-                        <button
-                          key={index}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded transition-colors"
-                        >
-                          <span>{term.name}</span>
-                          <span className="px-1.5 py-0.5 bg-white text-gray-800 text-[10px] font-semibold rounded">
-                            {term.count} 
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--primary-color)]">
+              Your dashboard
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Welcome back, {user.first_name || "learner"}.
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Everything you need for your next learning session.
+            </p>
           </div>
-
-          {/* Footer with Pagination and View More */}
-          <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-xs text-gray-600">
-              {displayStart} of {tutorialSubjects.length}
+          <Link href="/tutorials" className={actionClass}>
+            <Play className="h-4 w-4" />
+            Explore lessons
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </header>
+        {error && (
+          <div
+            role="alert"
+            className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+          >
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p className="flex-1">{error}</p>
+            <button
+              type="button"
+              onClick={() => setRetry((value) => value + 1)}
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 font-semibold hover:bg-amber-100 focus-visible:outline-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try again
+            </button>
+          </div>
+        )}
+        <section
+          className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          aria-label="Account overview"
+        >
+          {stats.map((stat) => (
+            <article
+              key={stat.label}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <p className="text-sm text-slate-500">{stat.label}</p>
+                <span className={`rounded-xl p-2.5 ${stat.color}`}>
+                  <stat.icon className="h-5 w-5" />
+                </span>
+              </div>
+              <p
+                className="text-2xl font-semibold tracking-tight text-slate-900"
+                aria-live="polite"
+              >
+                {stat.value}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {stat.note}
+              </p>
+              <Link
+                href={stat.href}
+                className="mt-5 inline-flex min-h-8 items-center gap-2 text-xs font-semibold text-[var(--primary-color)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                {stat.link}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </article>
+          ))}
+        </section>
+        {!isLoading && subscription && !active && (
+          <section className="mb-7 flex flex-col gap-5 rounded-2xl border border-indigo-100 bg-indigo-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-900">
+                Ready for your next lesson?
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Activate your subscription to access your course content.
+              </p>
             </div>
-            <Link href="/tutorials">
-            <Button
-              text="View More"
-              size="sm"
-              className="px-4 text-xs"
-            />
+            <Link href="/subscriptions" className={`${actionClass} shrink-0`}>
+              Manage subscription
+              <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
+          </section>
+        )}
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Your courses
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Choose a subject and make your next step count.
+                </p>
+              </div>
+              <Link
+                href="/tutorials"
+                className="inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-[var(--primary-color)] hover:underline focus-visible:outline-2"
+              >
+                View all
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <SubjectList
+              subjects={subjects.slice(0, 5)}
+              isLoading={isLoading}
+              onViewContent={setSelectedSubject}
+              emptyMessage={
+                error
+                  ? "Your courses couldn't be loaded. Use the retry button above."
+                  : active
+                    ? "New course content will appear here when available."
+                    : "Your courses will be available with an active subscription."
+              }
+            />
+            {subjects.length > 5 && (
+              <p className="border-t border-slate-100 px-6 py-4 text-xs text-slate-500">
+                Showing 5 of {subjects.length} subjects. Explore tutorials to
+                view the full library.
+              </p>
+            )}
+          </section>
+          <aside className="space-y-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 inline-flex rounded-xl bg-indigo-50 p-2.5 text-[var(--primary-color)]">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <h2 className="font-semibold text-slate-900">Your examination</h2>
+              <p className="mt-3 text-xl font-semibold text-[var(--primary-color)]">
+                {exam || "Your enrollment"}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {department || "View your account details in settings."}
+              </p>
+              <Link
+                href="/settings"
+                className="mt-5 inline-flex min-h-9 items-center gap-2 text-xs font-semibold text-[var(--primary-color)] focus-visible:outline-2"
+              >
+                Account details
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-3 px-1 font-semibold text-slate-900">
+                Quick actions
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowWalletModal(true)}
+                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-slate-700 hover:bg-slate-50 focus-visible:outline-2"
+              >
+                <Wallet className="h-4 w-4 text-slate-400" />
+                Add to wallet
+                <ArrowRight className="ml-auto h-4 w-4 text-slate-400" />
+              </button>
+              {[
+                {
+                  href: "/subscriptions",
+                  text: "Payment history",
+                  icon: Receipt,
+                },
+                {
+                  href: "/settings",
+                  text: "Account settings",
+                  icon: Settings2,
+                },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm text-slate-700 hover:bg-slate-50 focus-visible:outline-2"
+                >
+                  <item.icon className="h-4 w-4 text-slate-400" />
+                  {item.text}
+                  <ArrowRight className="ml-auto h-4 w-4 text-slate-400" />
+                </Link>
+              ))}
+            </section>
+          </aside>
         </div>
-      </section>
+      </div>
+      <WalletLoadModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSuccess={() => setRetry((value) => value + 1)}
+      />
+      <ClassVideosModal
+        key={selectedSubject?.subjectId ?? "closed"}
+        isOpen={!!selectedSubject}
+        subject={selectedSubject}
+        onClose={() => setSelectedSubject(null)}
+      />
     </PortalWrapper>
   );
 }

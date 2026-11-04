@@ -1,195 +1,279 @@
 "use client";
-import { ChevronDown, ChevronUp, Eye } from "lucide-react";
+
+import { Play, BookOpen, ArrowUpRight } from "lucide-react";
 import { PortalWrapper } from "../PortalWrapper";
 import { useAuthStore } from "@/store/authStore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/form";
 import Link from "next/link";
-
-interface TutorialSubject {
-  id: string;
-  name: string;
-  terms: {
-    name: string;
-    count: number;
-  }[];
-}
-
-const tutorialSubjects: TutorialSubject[] = [
-  {
-    id: "basic-science",
-    name: "BASIC SCIENCE",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-  {
-    id: "basic-technology",
-    name: "BASIC TECHNOLOGY",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-  {
-    id: "civic-education",
-    name: "CIVIC EDUCATION",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-  {
-    id: "computer-science",
-    name: "COMPUTER SCIENCE",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-    {
-    id: "mathematics",
-    name: "Mathematics",
-    terms: [
-      { name: "FIRST TERM", count: 10 },
-      { name: "SECOND TERM", count: 10 },
-      { name: "THIRD TERM", count: 10 },
-    ],
-  },
-];
+import {
+  fetchDashboardSummary,
+  fetchSubjectsWithVideos,
+  fetchUserSubscription,
+} from "@/services/portal";
+import { DashboardSummary, SubjectWithVideos } from "@/types/portal";
+import WalletLoadModal from "@/components/wallet/WalletLoadModal";
+import SubscriptionModal from "@/components/subscription/SubscriptionModal";
+import ClassVideosModal from "@/components/tutorial/ClassVideosModal";
+import SubjectList from "@/features/portal/tutorials/SubjectList";
 
 export default function Tutorials() {
-  const { user } = useAuthStore();
-  const [expandedSubjects, setExpandedSubjects] = useState<string[]>([
-    "basic-science",
-    "basic-technology",
-  ]);
-  const [currentPage] = useState(1);
-  const itemsPerPage = 5;
+  const { user, token } = useAuthStore();
+  const [summary, setSummary] = useState<DashboardSummary>({
+    subscriptionExpiresIn: 0,
+    walletBalance: 0,
+    currency: "₦",
+    subscriptionStatus: "expired",
+    subscriptionType: "basic",
+  });
+  const [subjects, setSubjects] = useState<SubjectWithVideos[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] =
+    useState<SubjectWithVideos | null>(null);
 
-  const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) =>
-      prev.includes(subjectId)
-        ? prev.filter((id) => id !== subjectId)
-        : [...prev, subjectId],
-    );
-  };
+  useEffect(() => {
+    setIsAuthenticated(!!token && !!user);
+
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        if (!token || !user) {
+          setIsLoading(false);
+          return;
+        }
+
+        const subscription = await fetchUserSubscription().catch(() => null);
+        const isActive = !!subscription?.isSubscriptionActive;
+        setHasActiveSubscription(isActive);
+
+        if (!subscription || !isActive) {
+          setSubjects([]);
+          return;
+        }
+
+        const [sum, subs] = await Promise.all([
+          fetchDashboardSummary().catch(() => ({
+            subscriptionExpiresIn: 0,
+            walletBalance: subscription.walletBalance,
+            currency: subscription.currency,
+            subscriptionStatus: "expired" as const,
+            subscriptionType: subscription.subscriptionType,
+          })),
+          fetchSubjectsWithVideos().catch(() => []),
+        ]);
+
+        setSummary(sum);
+        setSubjects(subs);
+      } catch (error) {
+        console.error("Tutorials data load error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [token, user]);
 
   const userName = user
     ? `${user.first_name} ${user.last_name}`
-    : "Ibrahim Ibrahim";
-  const userRole = user?.role || "IBRAHIM";
+    : "Student User";
+  const userRole = user?.role || "STUDENT";
+  const lessonCount = subjects.reduce(
+    (total, subject) =>
+      total +
+      subject.yearGroups.reduce((count, year) => count + year.videos.length, 0),
+    0,
+  );
 
-  // Pagination logic
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentSubjects = tutorialSubjects.slice(startIndex, endIndex);
-  const displayStart = startIndex + 1;
+  if (!isAuthenticated) {
+    return (
+      <PortalWrapper>
+        <section className="px-6 py-20">
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="mb-6">
+              <div className="p-4 bg-[var(--primary-color-light)] rounded-full text-[var(--primary-color)] mb-4 inline-block">
+                <Play className="w-12 h-12" />
+              </div>
+              <h2 className="text-2xl font-bold text-[var(--title-color)] font-bold-custom mb-2">
+                Tutorial Videos
+              </h2>
+              <p className="text-[var(--text-color)] text-lg mb-6">
+                Please log in to access your tutorial videos and learning
+                materials.
+              </p>
+            </div>
+            <Link href="/">
+              <Button text="Go to Login" variant="primary" className="px-8" />
+            </Link>
+          </div>
+        </section>
+      </PortalWrapper>
+    );
+  }
+
+  if (isAuthenticated && !isLoading && !hasActiveSubscription) {
+    return (
+      <PortalWrapper>
+        <section className="px-6 py-20">
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="mb-6">
+              <p className="text-[var(--secondary-color)] text-lg font-bold font-bold-custom uppercase tracking-wide">
+                SUBSCRIPTION EXPIRED! Please subscribe again to continue.
+              </p>
+            </div>
+            <Button
+              text="Click here to subscribe"
+              variant="primary"
+              className="px-8"
+              onClick={() => setShowSubscriptionModal(true)}
+            />
+          </div>
+          <SubscriptionModal
+            isOpen={showSubscriptionModal}
+            onClose={() => setShowSubscriptionModal(false)}
+          />
+        </section>
+      </PortalWrapper>
+    );
+  }
 
   return (
     <PortalWrapper>
-      {/* User Info Bar */}
-      <section className="px-6 pt-4">
-        <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-          {/* Left Side - User Info */}
+      {/* Page header */}
+      <section className="border-b border-slate-200 bg-white px-5 py-8 sm:px-8 sm:py-10">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--primary-color)]">
+              <BookOpen className="h-4 w-4" />
+              Your learning space
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              A little learning. A lot of progress.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+              Choose a subject, explore past examination years, and learn one
+              lesson at a time.
+            </p>
+          </div>
+          {!isLoading && (
+            <div className="flex gap-6 rounded-2xl border border-slate-100 bg-slate-50 px-6 py-4">
+              <div>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {subjects.length}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Subjects to explore
+                </p>
+              </div>
+              <div className="border-l border-slate-200 pl-6">
+                <p className="text-2xl font-semibold text-slate-900">
+                  {lessonCount}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">Video lessons</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* User info bar */}
+      <section className="px-5 pt-5 sm:px-8">
+        <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[var(--border-color-light)]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--secondary-color)] flex items-center justify-center text-white text-xs font-semibold font-medium-custom">
               {userName
                 .split(" ")
                 .map((n) => n[0])
                 .join("")}
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">
-                {userName}
+              <h2 className="text-sm font-semibold text-[var(--title-color)] capitalize font-medium-custom">
+                {userName.toLowerCase()}
               </h2>
-              <p className="text-xs text-gray-500">{userRole}</p>
-            </div>
-          </div>
-
-          {/* Right Side - Subscription & Wallet */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-[10px] text-gray-500">
-                Subscription expires in
+              <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-tighter">
+                {userRole}
               </p>
-              <p className="text-sm font-semibold text-gray-900">30 Day(s)</p>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="text-right">
-                <p className="text-[10px] text-gray-500">Wallet Balance</p>
-                <p className="text-sm font-semibold text-gray-900">₦0.00</p>
-              </div>
-              <Eye className="h-4 w-4 text-gray-400 cursor-pointer hover:text-gray-600" />
+          </div>
+          <div className="grid w-full grid-cols-2 items-end gap-4 md:flex md:w-auto md:items-center md:gap-6">
+            <div className="text-left md:text-right">
+              <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
+                Remaining Days
+              </p>
+              <p
+                className={`whitespace-nowrap text-sm font-bold font-medium-custom ${
+                  summary.subscriptionExpiresIn <= 7
+                    ? "text-[var(--failed-color)]"
+                    : "text-[var(--title-color)]"
+                }`}
+              >
+                {summary.subscriptionExpiresIn} Day(s)
+              </p>
             </div>
-            <Button text="Load Wallet" size="sm" className="px-4 text-xs" />
+            <div className="text-left md:text-right">
+              <p className="text-[10px] text-[var(--text-secondary-color)] uppercase tracking-wider">
+                Wallet Balance
+              </p>
+              <p className="text-sm font-bold text-[var(--text-green)] font-medium-custom">
+                {summary.currency}
+                {summary.walletBalance.toLocaleString()}
+              </p>
+            </div>
+            <div className="col-span-2 md:col-span-1">
+              <Button
+                text="Load Wallet"
+                size="sm"
+                fullWidth
+                className="md:w-auto"
+                onClick={() => setShowWalletModal(true)}
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Tutorial Subjects Section */}
-      <section className="px-6 py-4">
-        <div className="bg-white rounded-lg shadow-sm">
-          {/* Header */}
-          <div className="px-5 py-3 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <span className="text-orange-500">📚</span>
-              LIST OF TUTORIAL SUBJECTS
-            </h2>
+      {/* Subject list */}
+      <section className="px-5 py-6 font-regular-custom sm:px-8">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Your course library
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Pick a subject to see its lessons and examination years.
+              </p>
+            </div>
+            <ArrowUpRight className="h-5 w-5 shrink-0 text-slate-400" />
           </div>
 
-          {/* Subjects List */}
-          <div>
-            {currentSubjects.map((subject, index) => {
-              const isExpanded = expandedSubjects.includes(subject.id);
-              const isLast = index === currentSubjects.length - 1;
-              return (
-                <div
-                  key={subject.id}
-                  className={`px-5 py-3 ${!isLast ? "border-b border-gray-200" : ""}`}
-                >
-                  {/* Subject Header */}
-                  <button
-                    onClick={() => toggleSubject(subject.id)}
-                    className="w-full flex items-center justify-between hover:bg-gray-50 -mx-2 px-2 py-1.5 rounded transition-colors"
-                  >
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      {subject.name}
-                    </h3>
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    )}
-                  </button>
-
-                  {/* Terms */}
-                  {isExpanded && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {subject.terms.map((term, index) => (
-                        <button
-                          key={index}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded transition-colors"
-                        >
-                          <span>{term.name}</span>
-                          <span className="px-1.5 py-0.5 bg-white text-gray-800 text-[10px] font-semibold rounded">
-                            {term.count} 
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <SubjectList
+            subjects={subjects}
+            isLoading={isLoading}
+            onViewContent={setSelectedSubject}
+            searchable
+          />
         </div>
       </section>
+
+      <WalletLoadModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSuccess={() => {
+          fetchDashboardSummary().then(setSummary).catch(console.error);
+        }}
+      />
+
+      <ClassVideosModal
+        key={selectedSubject?.subjectId ?? "closed"}
+        isOpen={!!selectedSubject}
+        subject={selectedSubject}
+        onClose={() => setSelectedSubject(null)}
+      />
     </PortalWrapper>
   );
 }
