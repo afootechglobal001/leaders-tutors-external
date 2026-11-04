@@ -83,12 +83,22 @@ export default function Tutorials() {
   }, [token, user]);
 
   useEffect(() => {
-    if (hasAppliedSubjectParam.current || !subjectIdParam || !subjects.length)
-      return;
+    if (hasAppliedSubjectParam.current || !subjects.length) return;
+
+    let storedSubjectId: string | null = null;
+    try {
+      storedSubjectId = sessionStorage.getItem("lastViewedSubjectId");
+      sessionStorage.removeItem("lastViewedSubjectId");
+    } catch {
+      // sessionStorage unavailable (private mode, etc.) — URL param still covers this case
+    }
+
+    const targetSubjectId = subjectIdParam ?? storedSubjectId;
+    if (!targetSubjectId) return;
 
     hasAppliedSubjectParam.current = true;
     const matchedSubject = subjects.find(
-      (subject) => subject.subjectId === subjectIdParam,
+      (subject) => subject.subjectId === targetSubjectId,
     );
     if (matchedSubject) setSelectedSubject(matchedSubject);
   }, [subjectIdParam, subjects]);

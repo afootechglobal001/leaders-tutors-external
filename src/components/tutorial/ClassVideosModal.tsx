@@ -108,7 +108,14 @@ export default function ClassVideosModal({
   const watchVideo = (tutorialId: string) => {
     onClose();
     const params = new URLSearchParams({ tutorialId });
-    if (subject?.subjectId) params.set("subjectId", subject.subjectId);
+    if (subject?.subjectId) {
+      params.set("subjectId", subject.subjectId);
+      try {
+        sessionStorage.setItem("lastViewedSubjectId", subject.subjectId);
+      } catch {
+        // sessionStorage unavailable (private mode, etc.) — URL param still covers this case
+      }
+    }
     router.push(`/tutorials/watch?${params.toString()}`);
   };
 
